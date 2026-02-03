@@ -1,0 +1,910 @@
+//---------------------------------------
+
+// npm install react-native-config
+// expo install expo-firebase-analytics
+
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  Platform,
+  StatusBar,
+  Button,
+  ImageBackground,
+  Image,
+} from "react-native";
+import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import {
+  InterstitialAd,
+  BannerAd,
+  BannerAdSize,
+  AdEventType,
+  TestIds,
+} from "react-native-google-mobile-ads";
+import { useAudioPlayer } from "expo-audio";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Location from "expo-location";
+import  NetInfo  from "@react-native-community/netinfo";
+import { radarAPI, signalAPI } from "../../services/api";
+import { getUserData } from "../../services/auth";
+import ARRadarView from "../../components/ARRadarView";
+import { useAuth } from "../../hooks/useAuth";
+import { useSocket } from "../../hooks/useSocket";
+import { useRouter } from "expo-router";
+
+interface NearbyUser {
+  _id: string;
+  username: string;
+  interests:{ 
+   common: [string],
+   count:number
+  };
+  distance: number;
+  bearing: number;
+  profilePicture?: string;
+  toSessionId: string;
+  privacySettings:{
+    isVisible: boolean;
+  showCommonInterestsOnly: boolean;
+  showOnRadar:boolean
+  }
+  
+}
+
+interface UserLocation {
+  lat: number;
+  lon: number;
+  accuracy: number;
+  timestamp: number;
+}
+
+interface PrivacySettings {
+  isVisible: boolean;
+  showCommonInterestsOnly: boolean;
+}
+
+// ✅ OPTIONS DE DISTANCE DISPONIBLES
+const DISTANCE_OPTIONS = [
+  { value: 1000, label: "1km", emoji: "🚶" },
+  { value: 2000, label: "2km", emoji: "🚴" },
+  { value: 5000, label: "5km", emoji: "🚗" },
+  { value: 10000, label: "10km", emoji: "🚘" },
+];
+//--------------------- EN PRODUCTION -----------------//
+
+// const adUnitId = Platform.select({
+//   ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/aaaaaaaaaa', //  Ad Unit ID pour iOS
+//   android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb', // Ad Unit ID pour Android
+// });
+
+//------------------------ EN DEVELOPPEMENT -----------//
+
+// Banner Ad ------------------------
+const adUnitIdBan = __DEV__
+  ? TestIds.BANNER
+  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+
+  // Interstitial Ad ----------------------
+const adUnitIdInter = __DEV__
+  ? TestIds.INTERSTITIAL
+  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+
+const interstitial = InterstitialAd.createForAdRequest(adUnitIdInter, {
+  keywords: ["fashion", "clothing"],
+});
+
+const RadarScreen: React.FC = () => {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSendingSignal, setIsSendingSignal] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<UserLocation | null>(
+    null
+  );
+  const [selectedDistance, setSelectedDistance] = useState(5000); // 5km par défaut
+  const { socket, isConnected, onlineUsers, sendSignal } = useSocket();
+  const [loaded, setLoaded] = useState(false);
+  const [isShowingAd, setIsShowingAd] = useState(false);
+  const [networkConnected,setNetworkConnected] = useState<boolean>(false)
+  const bannerRef = useRef<BannerAd>(null);
+  
+  const { user } = useAuth();
+  const router = useRouter();
+
+
+  const player = useAudioPlayer(require("../../assets/sound/sendSignal.mp3"));
+   useEffect(() => {
+      const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+        console.log('Etat de connexion : ',state);
+        
+        const isNowConnected = !!state.isConnected;
+        setNetworkConnected(isNowConnected);
+  
+        if (isNowConnected) {
+          
+          // console.log("🌐 Connexion rétablie - Traitement de la file...");
+          // processRewardQueue().then((successCount) => {
+          //   if (successCount > 0) {
+          //     console.log(`✅ ${successCount} récompense(s) synchronisées`);
+            }
+          });
+        
+      
+  
+      return () => unsubscribeNetInfo();
+    }, []);
+
+  useEffect(() => {
+    if (permission && !permission.granted) {
+      requestPermission();
+    } else if (permission?.granted) {
+      startLocationTracking();
+      // fetchNearbyUsers(currentLocation.lat,currentLocation.lon)
+      // loadSimulatedUsers();
+      if (isConnected) {
+        console.log("✅ Prêt à recevoir des signaux en temps réel!");
+      }
+    }
+  }, [permission, isConnected]);
+
+  // Dans votre useEffect pour l'interstitiel
+  useEffect(() => {
+    const unsubscribeLoaded = interstitial.addAdEventListener(
+      AdEventType.LOADED,
+      () => {
+        console.log("✅ Interstitiel chargé et prêt.");
+        setLoaded(true);
+        setIsShowingAd(false); // Réinitialise après rechargement
+      }
+    );
+
+    const unsubscribeError = interstitial.addAdEventListener(
+      AdEventType.ERROR,
+      (error) => {
+        // console.error('❌ Erreur de chargement:', error);
+        setLoaded(false);
+        setIsShowingAd(false);
+      }
+    );
+
+    const unsubscribeOpened = interstitial.addAdEventListener(
+      AdEventType.OPENED,
+      () => {
+        console.log("👁️ Interstitiel ouvert.");
+        setIsShowingAd(true); // L'annonce est EN TRAIN de s'afficher
+        if (Platform.OS === "ios") {
+          StatusBar.setHidden(true);
+        }
+      }
+    );
+
+    const unsubscribeClosed = interstitial.addAdEventListener(
+      AdEventType.CLOSED,
+      () => {
+        console.log("👋 Interstitiel fermé.");
+        setIsShowingAd(false); // Terminé d'afficher
+        if (Platform.OS === "ios") {
+          StatusBar.setHidden(false);
+        }
+        // 🔥 ATTENTION : NE PAS appeler setLoaded(false) ici
+        // 🔥 On recharge MAIS on garde loaded=true jusqu'au prochain LOADED
+        interstitial.load();
+      }
+    );
+
+    interstitial.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeError();
+      unsubscribeOpened();
+      unsubscribeClosed();
+    };
+  }, []);
+
+  const startLocationTracking = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission requise",
+          "La localisation est nécessaire pour le radar"
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+      });
+
+      console.log("📍 COORDONNÉES GPS:", {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        accuracy: location.coords.accuracy,
+      });
+
+      const newLocation: UserLocation = {
+        lat: location.coords.latitude,
+        lon: location.coords.longitude,
+        accuracy: location.coords.accuracy || 0,
+        timestamp: location.timestamp,
+      };
+
+      setCurrentLocation(newLocation);
+
+      fetchNearbyUsers(newLocation.lat, newLocation.lon);
+
+      await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Highest,
+          timeInterval: 1000,
+          distanceInterval: 0.2,
+          mayShowUserSettingsDialog: true,
+          
+        },
+        async (location) => {
+          const updatedLocation: UserLocation = {
+            lat: location.coords.latitude,
+            lon: location.coords.longitude,
+            accuracy: location.coords.accuracy || 0,
+            timestamp: location.timestamp,
+          };
+
+          setCurrentLocation(updatedLocation);
+
+          if (isVisible) {
+            fetchNearbyUsers(updatedLocation.lat, updatedLocation.lon);
+          }
+        }
+      );
+    } catch (error) {
+      // console.error("Error starting location tracking:", error);
+    }
+  };
+
+  console.log(`La précision est : ${currentLocation?.accuracy}`);
+
+  // const playSound = async () => {
+  //   try {
+  //     const { sound } = await Audio.Sound.createAsync(
+  //       require("../../assets/sound/sendsignal.wav")
+  //     );
+  //     await sound.playAsync();
+  //   } catch (error) {
+  //     console.error("Erreur de lecture audio:", error);
+  //   }
+  // };
+  const playSignalSound = () => {
+    player.seekTo(0); // Remet le son au début
+    player.play(); // Joue le son
+  };
+  
+    const playerErrorSound = useAudioPlayer(require("../../assets/sound/errorSound.mp3"));
+    const playErrorSound = () => {
+      playerErrorSound.seekTo(0); // Remet le son au début
+      playerErrorSound.play(); // Joue le son
+    };
+  const fetchNearbyUsers = async (lat: number, lon: number) => {
+     if (!networkConnected) {
+            Alert.alert("📡 Hors ligne","Veuillez activer données mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay")
+         return 
+        } 
+        // else{
+        //   Alert.alert("🌐 Connexion rétablie","Vous êtes connectés à l'internet donnée mobile est activé")
+
+         if (!isVisible) return;
+    
+    const currentLat = lat || currentLocation?.lat;
+    const currentLon = lon || currentLocation?.lon;
+
+    if (!currentLat || !currentLon) {
+      // console.log("❌ Position non disponible pour la recherche");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      // console.log(`📍 Recherche dans un rayon de ${selectedDistance / 1000}km`);
+
+      const response = await radarAPI.getNearbyUsers(
+        lat,
+        lon,
+        selectedDistance
+      );
+      // console.log("📡 Réponse API:", response.data);
+
+      if (response.data.success && response.data.data) {
+        const usersFromAPI = response.data.data.users || [];
+
+        setNearbyUsers(usersFromAPI);
+        console.log(`✅ ${usersFromAPI.length} utilisateurs chargés`);
+      } else {
+        console.warn("❌ API returned success: false", response.data.message);
+      }
+    } catch (error: any) {
+      // console.error("❌ Error fetching nearby users:", error);
+
+      if (error.response?.status === 404) {
+        console.log("🔧 Endpoint non trouvé, utilisation des données simulées");
+        // loadSimulatedUsers();
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  //   const handleDistanceChange = async (distance: number) => {
+  //     setSelectedDistance(distance);
+  //     console.log(` Distance changée: ${distance / 1000}km`);
+  //
+  //     // Relancer la recherche immédiatement
+  //     if (currentLocation) {
+  //       await fetchNearbyUsers(currentLocation.lat, currentLocation.lon);
+  //     }
+  //   };
+
+  // const loadSimulatedUsers = () => {
+  //   const mockUsers: NearbyUser[] = [
+  //     {
+  //       _id: "2",
+  //       username: "MarieCurie",
+  //       interest_count: 5,
+  //       distance: 25,
+  //       bearing: 120,
+  //       toSessionId: "session_2",
+  //     },
+  //     {
+  //       _id: "3",
+  //       username: "PierreMartin",
+  //       interest_count: 2,
+  //       distance: 80,
+  //       bearing: 270,
+  //       toSessionId: "session_3",
+  //     },
+  //   ];
+  //   setNearbyUsers(mockUsers);
+  // };
+
+  const handleSendSignal = async (userId: string) => {
+    try {
+      const targetUser = nearbyUsers.find((user) => user._id === userId);
+      if (!targetUser) {
+        Alert.alert("Erreur", "Utilisateur non trouvé");
+        return;
+      }
+      Alert.alert(
+        "Envoyer un signal",
+        `Voulez-vous envoyer un signal à ${targetUser.username.toUpperCase()} avec ${targetUser.interests.count} l'interêt${targetUser.interests.count > 1 ? "s" :"" } commun${targetUser.interests.count > 1 ? "s" :"" } et distant de ${targetUser.distance}m ?`,
+        [
+          { text: "Non", style: "cancel" },
+          {
+            text: "Oui",
+            onPress: async () => {
+              try {
+                setIsSendingSignal(userId);
+
+                // console.log("📤 Envoi signal à:", targetUser._id);
+
+                if (socket && isConnected) {
+                  try {
+                    const result = await sendSignal(
+                      targetUser._id,
+                      `Salut ! Je suis ${user?.username} - Distance: ${targetUser.distance}m`
+                    );
+
+                    playSignalSound();
+                    console.log("✅ Signal envoyé via Socket:", result);
+                    Alert.alert(
+                      "Bravo 🎉 !",
+                      result.delivered
+                        ? `✅ ${targetUser.username} a réçu votre signal ! Attendez sa réponse !`
+                        : `Signal enregistré pour ${targetUser.username}, mais hors ligne`
+                    );
+                    // showInterstitialAd();
+                    // Retirer l'utilisateur de la liste après envoi réussi
+                    setNearbyUsers((prev) =>
+                      prev.filter((user) => user._id !== userId)
+                    );
+                  } catch (socketError) {
+                    // Fallback vers l'API REST
+                    await sendSignalViaAPI(targetUser);
+                  }
+                } else {
+                  // Socket non disponible, utiliser directement l'API
+                  console.log("🔌 Socket non disponible, utilisation API REST");
+                  await sendSignalViaAPI(targetUser);
+                }
+              } catch (error: any) {
+                Alert.alert(
+                  "Erreur",
+                  error.message || "Impossible d'envoyer le signal"
+                );
+              } finally {
+                setIsSendingSignal(null);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      // console.error("Error in handleSendSignal:", error);
+      Alert.alert("Erreur", "Une erreur est survenue");
+      setIsSendingSignal(null);
+    }
+  };
+  const sendSignalViaAPI = async (targetUser: NearbyUser) => {
+    try {
+      // Utiliser votre API existante
+      const response = await signalAPI.send(targetUser.toSessionId);
+
+      if (response.data.success) {
+        console.log(
+          " Signal envoyé via API REST - ChatId:",
+          response.data.data.chatId
+        );
+
+        // Retirer l'utilisateur de la liste
+        setNearbyUsers((prev) =>
+          prev.filter((user) => user._id !== targetUser._id)
+        );
+
+        return response.data.data.chatId; // ← Retourner le chatId si besoin
+      } else {
+        // throw new Error(response.data.message || "Erreur API");
+        console.log("");
+      }
+    } catch (apiError: any) {
+      // Afficher un message d'erreur plus précis
+      playErrorSound()
+      Alert.alert("Désolé ⚠️ !", `${apiError.response?.data?.message}`);
+      // console.log(errorMessage)
+      // throw new Error(errorMessage);
+    }
+  };
+  const showInterstitialAd = () => {
+    if (loaded) {
+      console.log("Tentative d'affichage...");
+      interstitial.show();
+    } else if (!loaded) {
+      console.warn("Pas encore chargé.");
+    } else if (isShowingAd) {
+      console.warn("Déjà en train d'afficher.");
+    }
+  };
+
+  const refreshUsers = async () => {
+      if (!networkConnected) {
+            Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
+            return
+          }
+    if (currentLocation) {
+      await fetchNearbyUsers(currentLocation.lat, currentLocation.lon);
+    }
+  };
+
+  const navigateToProfile = () => {
+   if (!networkConnected) {  
+            Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
+            return
+          }
+    router.navigate({
+      pathname: "/(main)/profile",
+    });
+    showInterstitialAd();
+  };
+
+  const toggleVisibility = async () => {
+       if (!networkConnected) {
+            Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
+            return
+          }
+    const newVisibility = !isVisible;
+    setIsVisible(newVisibility);
+    if (newVisibility && currentLocation) {
+      await fetchNearbyUsers(currentLocation.lat, currentLocation.lon);
+    }
+  };
+
+  //  COMPOSANT SÉLECTEUR DE DISTANCE
+  // const DistanceSelector = () => (
+  //   <View style={styles.distanceSelector}>
+  //     <Text style={styles.distanceTitle}>Rayon de recherche :</Text>
+  //     <ScrollView
+  //       horizontal
+  //       showsHorizontalScrollIndicator={false}
+  //       style={styles.distanceScrollView}
+  //     >
+  //       <View style={styles.distanceButtons}>
+  //         {DISTANCE_OPTIONS.map((option) => (
+  //           <TouchableOpacity
+  //             key={option.value}
+  //             style={[
+  //               styles.distanceButton,
+  //               selectedDistance === option.value &&
+  //                 styles.distanceButtonActive,
+  //             ]}
+  //             onPress={() => handleDistanceChange(option.value)}
+  //           >
+  //             <Text
+  //               style={[
+  //                 styles.distanceEmoji,
+  //                 selectedDistance === option.value &&
+  //                   styles.distanceEmojiActive,
+  //               ]}
+  //             >
+  //               {option.emoji}
+  //             </Text>
+  //             <Text
+  //               style={[
+  //                 styles.distanceLabel,
+  //                 selectedDistance === option.value &&
+  //                   styles.distanceLabelActive,
+  //               ]}
+  //             >
+  //               {option.label}
+  //             </Text>
+  //           </TouchableOpacity>
+  //         ))}
+  //       </View>
+  //     </ScrollView>
+  //   </View>
+  // );
+
+  if (!permission) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Vérification des permissions...</Text>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>Permissions requises</Text>
+        <Text style={styles.errorSubtext}>
+          Cette application a besoin de l'accès à la caméra et à la localisation
+          pour fonctionner.
+        </Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={requestPermission}
+        >
+          <Text style={styles.retryButtonText}>Autoriser la caméra</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  if (isLoading) {
+    
+  }
+
+  return (
+    <ImageBackground
+      source={require("../../assets/images/asmay-backgroundImage.png")}
+      resizeMode="cover"
+      style={styles.container}
+    >
+ 
+      {/* <View style={styles.container}> */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="#fff" />
+        </View>
+      )}
+
+      <View style={styles.cameraOverlay}>
+        <ARRadarView
+          users={nearbyUsers}
+          onUserPress={handleSendSignal}
+          isSendingSignal={isSendingSignal}
+          currentLocation={currentLocation || { lat: 0, lon: 0 }}
+        />
+      </View>
+
+      <View
+        style={[
+          styles.connectionIndicator,
+          isConnected ? styles.connected : styles.disconnected,
+        ]}
+      >
+        <Text style={styles.connectionText}>
+          {isConnected ? "🔴 En ligne" : "⚫ Hors ligne"}
+        </Text>
+      </View>
+      {/* Contrôles */}
+      <View style={styles.controls}>
+      
+        <TouchableOpacity style={styles.controlButton}  onPress={navigateToProfile}>
+             <Ionicons      
+                name={"person"} 
+                size={34} 
+               color={"#d4d1d1ff"} 
+              
+            />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={refreshUsers}>
+               <Ionicons 
+                name={"refresh-outline"} 
+                size={34} 
+               color={"white"} 
+               />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={toggleVisibility}>
+               <Ionicons 
+                name={isVisible ? "eye-outline":"eye"} 
+                size={34} 
+               color={"white"} 
+               />
+        </TouchableOpacity>
+       
+      </View>
+      {/* 
+      {/* Informations de statut */}
+      <View style={styles.statusBar}>
+    
+
+        {currentLocation && (
+          <Text>
+            {currentLocation.accuracy <= 20 ? (
+              <Text style={styles.statusText}>
+                🟢 Précision Excellente: {Math.round(currentLocation.accuracy)}m
+              </Text>
+            ) : currentLocation.accuracy <= 50 ? (
+              <Text style={styles.statusText}>
+                🟡 Précision Moyenne: {Math.round(currentLocation.accuracy)}m
+              </Text>
+            ) : (
+              <Text style={styles.statusText}>
+                🔴 Précision Faible: {Math.round(currentLocation.accuracy)}m
+              </Text>
+            )}
+          </Text>
+        )}
+      
+      </View>
+        <BannerAd ref={bannerRef} unitId={adUnitIdBan} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+    </ImageBackground>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  menuButton:{
+  position:"absolute",
+  top:-70,
+  right:8
+  },
+  profilePicture: {
+    height: 50,
+    width: 50,
+  },
+  imageProfile: {
+    top: -100,
+    position: "absolute",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
+    
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#dc3545",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  image: {
+    height: 60,
+    width: 100,
+    position: "absolute",
+    top: -144,
+    right: -25,
+    elevation: 5,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#007bff",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  connectionIndicator: {
+    position: "absolute",
+    top: 45,
+    left: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 15,
+    zIndex: 1000,
+  },
+  connected: {
+    backgroundColor: "rgba(76, 175, 80, 0.9)",
+  },
+  disconnected: {
+    backgroundColor: "rgba(146, 65, 18, 0.9)",
+  },
+  connectionText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: -100,
+    left: 300,
+    right: 0,
+    bottom: 590,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  loadingOverlayText: {
+    color: "#fff",
+    marginTop: 10,
+    fontSize: 16,
+  },
+  // camera: {
+  //   flex: 1,
+  //   paddingTop: 120,
+  //   // paddingBottom: 80,
+  // },
+  cameraOverlay: {
+    flex: 1,
+    padding: 20,
+    paddingBottom: 0,
+
+    backgroundColor: "transparent",
+  },
+
+  // ✅ NOUVEAUX STYLES POUR LE SÉLECTEUR DE DISTANCE
+  // distanceSelector: {
+  //   position: "absolute",
+  //   top: 3,
+  //   left: 10,
+  //   right: 10,
+  //   backgroundColor: "rgba(0, 0, 0, 0.7)",
+  //   borderRadius: 12,
+  //   borderColor: "#b45a11ff",
+  //   borderWidth: 2,
+  //   padding: 10,
+  //   zIndex: 100,
+  // },
+  // distanceTitle: {
+  //   color: "#fff",
+  //   fontSize: 10,
+  //   fontWeight: "600",
+  //   marginBottom: 8,
+  //   textAlign: "center",
+  // },
+  // distanceScrollView: {
+  //   flexGrow: 0,
+  // },
+  // distanceButtons: {
+  //   flexDirection: "row",
+  //   gap: 8,
+  // },
+  // distanceButton: {
+  //   backgroundColor: "rgba(255, 255, 255, 0.1)",
+  //   paddingHorizontal: 8,
+  //   paddingVertical: 6,
+  //   borderRadius: 20,
+  //   alignItems: "center",
+  //   minWidth: 60,
+  //   borderWidth: 2,
+  //   borderColor: "rgba(241, 119, 20, 0.3)",
+  // },
+  // distanceButtonActive: {
+  //   backgroundColor: "#007bff",
+  //   borderColor: "#007bff",
+  // },
+  // distanceEmoji: {
+  //   fontSize: 16,
+  //   marginBottom: 2,
+  // },
+  // distanceEmojiActive: {
+  //   // Même style pour l'emoji actif
+  // },
+  // distanceLabel: {
+  //   color: "#fff",
+  //   fontSize: 8,
+  //   fontWeight: "500",
+  // },
+  // distanceLabelActive: {
+  //   color: "#fff",
+  //   fontWeight: "bold",
+  // },
+  // distanceIndicator: {
+  //   color: "#fff",
+  //   fontSize: 12,
+  //   backgroundColor: "rgba(0, 123, 255, 0.8)",
+  //   paddingHorizontal: 10,
+  //   paddingVertical: 4,
+  //   borderRadius: 12,
+  //   marginBottom: 3,
+  //   fontWeight: "600",
+  // },
+
+  // Styles existants
+  controls: {
+    position: "absolute",
+    top: 110,
+    right: 10,
+    flexDirection: "column",
+    gap: 10,
+  },
+  controlButton: {
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    padding: 3,
+    borderRadius: 50,
+    alignItems: "center",
+    minWidth: 30,
+    borderWidth: 2,
+    borderColor: "#b4b0b0ff",
+  },
+  controlButtonActive: {
+    backgroundColor: "rgba(91, 92, 90, 0.92)",
+  },
+  controlButtonText: {
+    fontSize: 38,
+    color: "#fff",
+    top: -100,
+    left: 8,
+  },
+  controlButtonLabel: {
+    fontSize: 10,
+    color: "#fff",
+    marginTop: 0,
+    fontWeight: "bold",
+  },
+  statusBar: {
+    position: "absolute",
+    bottom: 7,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 12,
+    padding: 4,
+    borderRadius: 12,
+    marginBottom: 2,
+  },
+  sendingSignalText: {
+    backgroundColor: "rgba(255, 193, 7, 0.8)",
+    color: "#000",
+  },
+});
+
+export default RadarScreen;

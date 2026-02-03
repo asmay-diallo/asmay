@@ -1,24 +1,48 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { AuthProvider } from "../contexts/AuthContext";
+import { Provider } from "react-redux";
+import {useEffect} from "react"
+import { StreamVideoProvider } from '../contexts/StreamVideoContext';
+import { store } from "../store/store";
+import { useAuth } from "../hooks/useAuth";
+import ScreenLoading from "../components/ScreenLoading";
+import mobileAds from 'react-native-google-mobile-ads';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+function RootLayoutNav() {
+  const { isAuthenticated, loading } = useAuth();
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+useEffect(() => {
+    const initAdMob = async () => {
+      await mobileAds().initialize();
+      console.log('SDK AdMob initialisé pour le test.');
+    };
+    initAdMob();
+  }, []);
+
+  if (loading) {
+    return <ScreenLoading />;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      {isAuthenticated ? (
+        <Stack.Screen name="/(main)" />
+      ) : (
+        <Stack.Screen name="/(auth)" />
+      )}
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <AuthProvider>
+       <StreamVideoProvider> 
+          <RootLayoutNav />
+        </StreamVideoProvider>
+      </AuthProvider>
+    </Provider>
   );
 }
