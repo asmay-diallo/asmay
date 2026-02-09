@@ -14,7 +14,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import NetInfo  from "@react-native-community/netinfo";
-import { useAuth } from "@/hooks/useAuth";
 import CoinDisplay from '@/components/CoinDisplay';
 import { getUserData } from "../../services/auth";
 import Button from "../../components/Button";
@@ -22,8 +21,8 @@ import Input from "../../components/Input";
 import { User } from "../../types";
 import { useRouter } from "expo-router";
 import { uploadAPI } from "../../services/upload";
-
-import { userAPI, UserProfile } from "../../services/api"; // Importez les types
+import {useAuth } from './../../hooks/useAuth'
+import { userAPI, UserProfile } from "../../services/api"; 
 
 interface PrivacySettings {
   isVisible: boolean;
@@ -61,7 +60,7 @@ export default function ProfileScreen() {
   const [loadingRate, setLoadingRate] = useState(false);
   const [networkConnected,setNetworkConnected] = useState<boolean>(false)
 
-  const { logout, updateUser, user: authUser } = useAuth(); useAuth
+  const { logout, updateUser, user: authUser } = useAuth(); 
   const router = useRouter();
 
   useEffect(() => {
@@ -72,29 +71,9 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshCoins();
-        if (!networkConnected) {
-                 Alert.alert("📡 Hors ligne vous n'êtes pas connectés","Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay")
-              return 
-             }
+   
     }, [])
   );
-
-  // Mettez à jour userData quand authUser change
-  // useEffect(() => {
-  //   if (authUser) {
-  //     setUserData(authUser);
-  //     setEditedData({
-  //       username: authUser.username,
-  //       interests: authUser.interests?.join(", ") || "",
-  //       bio: authUser.bio || "",
-  //       profilePicture: authUser.profilePicture || "",
-  //       privacySettings: authUser.privacySettings || {
-  //         isVisible: true,
-  //         showCommonInterestsOnly: true,
-  //       },
-  //     });
-  //   }
-  // }, [authUser]);
 
   useEffect(() => {
     if (authUser) {
@@ -130,6 +109,7 @@ export default function ProfileScreen() {
         privacySettings: data.user.privacySettings || {
           isVisible: true,
           showCommonInterestsOnly: true,
+          showOnRadar:true
         },
       });
     }
@@ -192,7 +172,7 @@ export default function ProfileScreen() {
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.9,
       });
 
       if (!result.canceled) {
@@ -233,7 +213,7 @@ export default function ProfileScreen() {
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
-        router.replace("/login");
+        await logout()
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -266,7 +246,7 @@ export default function ProfileScreen() {
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
-        router.replace("/login");
+       await logout()
       }
 
       Alert.alert("Erreur", errorMessage);
@@ -319,7 +299,6 @@ export default function ProfileScreen() {
         text: "Déconnecter",
         onPress: async () => {
           await logout;
-          router.navigate("/login");
         },
       },
     ]);
@@ -341,10 +320,29 @@ export default function ProfileScreen() {
     }
   };
 
+
+ if (!networkConnected) {
+     return (
+        <View style={styles.centerContainer}>
+            <Ionicons
+           name="cloud-offline"
+           size={70}
+           color={"rgb(249, 244, 244)"}
+          />
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
+        </View>
+      );
+ }
+
+
   if (!userData) {
     return (
-      <View style={styles.centerContainer}>
-        <Text>Chargement de profil...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingTextVoid}>Chargement de votre profil...</Text>
+        <ActivityIndicator size="large"/>
+
       </View>
     );
   }
@@ -387,7 +385,6 @@ export default function ProfileScreen() {
              name={"camera" } 
               size={24} 
               color={"white"} 
-              title="📸"
               onPress={takePhoto}
               variant="secondary"
               loading={isUploading}
@@ -395,12 +392,10 @@ export default function ProfileScreen() {
             />
             {userData.profilePicture && (
               <Ionicons
-               name={"map"} 
-              size={24} 
-              color={"white"} 
-                title="🗑️"
+               name={"trash"} 
+               size={24} 
+               color={"white"} 
                 onPress={removeProfilePicture}
-                variant="danger"
                 style={styles.smallButton}
               />
             )}
@@ -566,20 +561,27 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#203447ff",
     padding: 20,
+    paddingTop:40,
   },
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#203447ff",
+  },
+  loadingTextVoid:{
+    color:"#fff",
+    fontSize:20,
+    marginBottom:20
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 30,
-    color: "#333",
+    color: "#fcf6f6",
   },
   nameText: {
     height: 50,
@@ -587,26 +589,44 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 30,
     marginBottom: 20,
-    color: "#090909ff",
+    color: "rgb(233, 225, 225)",
   },
   section: {
-    backgroundColor: "#c8cbcdff",
+    backgroundColor: "#203447ff",
     padding: 20,
     color: "white",
     borderRadius: 10,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 1, height: 4 },
-    shadowOpacity: 0.1,
+    shadowColor: "#04a70c",
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 8,
     textAlign: "center",
+  },
+   centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#030914ff",
+  },
+  loadingTitle: {
+    marginTop: 16,
+    marginBottom:16,
+    fontSize: 20,
+    fontWeight:"bold",
+    color: "#f1efefff",
+  },
+  loadingText: {
+    // marginBottom:16,
+    fontSize: 15,
+    color: "rgb(186, 184, 184)",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 15,
-    color: "#333",
+    color: "#fcf9f9",
     textAlign: "center",
   },
   profilePictureContainer: {

@@ -21,7 +21,7 @@ export const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-  const { user, isAuthenticated, token } = useAuth();
+  const { user, isAuthenticated,token } = useAuth();
   const router = useRouter();
 
   const socketRef = useRef<Socket | null>(null);
@@ -55,7 +55,7 @@ export const useSocket = () => {
       setSocket(null);
     }
 
-const socketUrl = 'http://10.178.82.123:5000';
+const socketUrl = 'http://10.88.166.123:5000';
 // process.env.EXPO_PUBLIC_API_URL ||
     
     console.log('🌐 Connexion à:', socketUrl);

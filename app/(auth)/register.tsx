@@ -19,6 +19,8 @@ import * as Location from "expo-location";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import  NetInfo  from "@react-native-community/netinfo";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 interface FormData {
   username: string;
@@ -55,6 +57,7 @@ export default function RegisterScreen() {
 
   // Récupérer la localisation au chargement du composant
   useEffect(() => {
+    // cleanOldAuthData();
     getCurrentLocation();
   }, []);
  useEffect(() => {
@@ -234,6 +237,21 @@ export default function RegisterScreen() {
 //     }
 //   };
 
+
+const cleanOldAuthData = async () => {
+  console.log('🧹 Nettoyage anciennes données auth...');
+  await AsyncStorage.multiRemove([
+    'token', 
+    'user', 
+    'auth_token', 
+    'user_data',
+    'auth_user',
+    'auth_token_key'
+  ]);
+  console.log('✅ Anciennes données supprimées');
+};
+
+
 const handleRegister = async () => {
     const {
       username,
@@ -318,12 +336,9 @@ const handleRegister = async () => {
           // 5. Petite pause pour être sûr
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          // 6. Rediriger vers l'écran principal
-          // ATTENTION : Ne redirigez PAS vers /login !
-          // Redirigez vers la page d'accueil de votre app
-          router.replace("/(main)/radar"); // ou "/(main)" selon votre structure
-          
-          // Optionnel : Message de succès
+          // Redirigez vers la page d'accueil 
+          router.replace("/(main)/radar"); 
+         
           Alert.alert(
             `Bienvenue ${user.username} sur ASMAY ✨`, 
             `Nous somme un monde de réalité augmentée . Découvrez le futur avec notre technologie moderne ! Plongez dans une nouvelle dimension où le réel rencontre le virtuel !`,
@@ -364,20 +379,17 @@ const handleRegister = async () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-//   const updateFormData = (field: keyof FormData, value: string) => {
-//     setFormData((prev) => ({ ...prev, [field]: value }));
-//   };
 if (!networkConnected) {
     return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size={70} color="#a89005ff" />
-          <Text style={styles.loadingText}> Vous êtes hors ligne</Text>
-          <Ionicons
-           name="wifi"
+         <Ionicons
+           name="cloud-offline"
            size={70}
-           color={"#9c7676ff"}
+           color={"rgb(249, 244, 244)"}
           />
-           <Text style={styles.wifiBar}>/</Text>
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
         </View>
       );
 }
@@ -415,7 +427,7 @@ if (!networkConnected) {
           <Text style={styles.locationSuccess}>
             ✅ Asmay disponible
             {/* : {formData.latitude.toFixed(2)},{" "} */}
-            {formData.longitude.toFixed(2)}
+            {/* {formData.longitude.toFixed(2)} */}
           </Text>
         ) : (
           <Text style={styles.locationText}>En attente de localisation...</Text>
@@ -426,7 +438,6 @@ if (!networkConnected) {
         value={formData.username}
         onChangeText={(text) => updateFormData("username", text)}
       />
-
       <Input
         placeholder="Address email*"
         value={formData.email}
@@ -434,21 +445,18 @@ if (!networkConnected) {
         keyboardType="email-address"
         autoCapitalize="none"
       />
-
       <Input
         placeholder="Mot de passe*"
         value={formData.password}
         onChangeText={(text) => updateFormData("password", text)}
         secureTextEntry
       />
-
       <Input
         placeholder="Confirmer mot de passe*"
         value={formData.confirmPassword}
         onChangeText={(text) => updateFormData("confirmPassword", text)}
         secureTextEntry
       />
-
       <Input
         placeholder="Centres d'intérest ( separés par des virgules )"
         value={formData.interests}
@@ -529,13 +537,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#030914ff",
     // top:-80
   },
-  loadingText: {
+   loadingTitle: {
     marginTop: 16,
     marginBottom:16,
     fontSize: 20,
-    fontFamily:"serif",
     fontWeight:"bold",
     color: "#f1efefff",
+  },
+  loadingText: {
+    // marginBottom:16,
+    fontSize: 15,
+    color: "rgb(186, 184, 184)",
   },
   wifiBar:{
     position:"absolute",

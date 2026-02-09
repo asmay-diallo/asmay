@@ -7,6 +7,7 @@ import {
   storeUserData,
   getUserData,
   removeUserData,
+  saveUserData
 } from "../services/auth";
 import { userAPI,authAPI } from "../services/api";
 
@@ -73,73 +74,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
     }
   };
+// Dans AuthProvider 
+const login = async (email: string, password: string): Promise<boolean> => {
+  
+  try {
+    setIsLoading(true);
+    const response = await authAPI.login({ email, password });
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      const response = await authAPI.login({ email, password });
+    if (response.data.success && response.data.data) {
+      const { token, user: userData } = response.data.data;
 
-      if (response.data.success && response.data.data) {
-        const { token, user: userData } = response.data.data;
+      // ⚠️ REMPLACEZ LES DEUX APPELS PAR UN SEUL
+      // Ancien: await storeToken(token); await storeUserData(userData);
+      // Nouveau:
+      await saveUserData(userData, token);
 
-        await storeToken(token);
-        await storeUserData(userData);
+      setUserToken(token);
+      setUser(userData);
 
-        setUserToken(token);
-        setUser(userData);
-
-        return true;
-      } else {
-        console.error("Login failed:", response.data.message);
-        return false;
-      }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else {
-        throw new Error("Erreur de connexion");
-      }
-    } finally {
-      setIsLoading(false);
+      return true;
+    } else {
+      console.error("Login failed:", response.data.message);
+      return false;
     }
-  };
+  } catch (error: any) {
+    console.error("Login error:", error);
+    throw new Error(error.response?.data?.message || "Erreur de connexion");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const register = async (userData: {
-    username: string;
-    email: string;
-    password: string;
-    interests: string[];
-  }): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      const response = await authAPI.register(userData);
+const register = async (userData: {
+  username: string;
+  email: string;
+  password: string;
+  interests: string[];
+}): Promise<boolean> => {
+  try {
+    setIsLoading(true);
+    const response = await authAPI.register(userData);
 
-      if (response.data.success && response.data.data) {
-        const { token, user: newUser } = response.data.data;
+    if (response.data.success && response.data.data) {
+      const { token, user: newUser } = response.data.data;
 
-        await storeToken(token);
-        await storeUserData(newUser);
+      //  UTILISEZ saveUserData
+      await saveUserData(newUser, token);
 
-        setUserToken(token);
-        setUser(newUser);
+      setUserToken(token);
+      setUser(newUser);
 
-        return true;
-      } else {
-        console.error("Registration failed:", response.data.message);
-        return false;
-      }
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else {
-        throw new Error("Erreur lors de l'inscription");
-      }
-    } finally {
-      setIsLoading(false);
+      return true;
+    } else {
+      console.error("Registration failed:", response.data.message);
+      return false;
     }
-  };
+  } catch (error: any) {
+    console.error("Registration error:", error);
+    throw new Error(error.response?.data?.message || "Erreur lors de l'inscription");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);

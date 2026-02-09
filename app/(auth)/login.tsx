@@ -12,8 +12,8 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useAuth } from "../../hooks/useAuth";
-import { authAPI, saveUserData } from "../../services/api";
-import { storeToken, storeUserData } from "../../services/auth";
+import { authAPI } from "../../services/api";
+import { storeToken, storeUserData ,saveUserData} from "../../services/auth";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import { useRouter } from "expo-router";
@@ -45,15 +45,6 @@ export default function LoginScreen() {
         const isConnected = !!state.isConnected
       setNetworkConnected(isConnected)
        
-        // if (isNowConnected) {
-        //   Alert.alert("🌐 Connexion rétablie")
-        //   console.log(" Connexion rétablie - Traitement de la file...");
-        //   processRewardQueue().then((successCount) => {
-        //     if (successCount > 0) {
-        //       console.log(`✅ ${successCount} récompense(s) synchronisées`);
-        //     }
-        //   });
-        // }
       });
   
       return () => unsubscribeNetInfo();
@@ -179,14 +170,14 @@ export default function LoginScreen() {
 if (!networkConnected) {
     return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size={70} color="#a89005ff" />
-          <Text style={styles.loadingText}> Vous êtes hors ligne</Text>
-          <Ionicons
-           name="wifi"
+            <Ionicons
+           name="cloud-offline"
            size={70}
-           color={"#9c7676ff"}
+           color={"rgb(249, 244, 244)"}
           />
-               <Text style={styles.wifiBar}>/</Text>
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
         </View>
       );
 }
@@ -321,20 +312,24 @@ const styles = StyleSheet.create({
     color :"red",
     flex: 1,
   },
-    centerContainer: {
+ centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#252a33ff",
-    top:-80
+    // top:-80
   },
-  loadingText: {
+  loadingTitle: {
     marginTop: 16,
     marginBottom:16,
     fontSize: 20,
-    fontFamily:"serif",
     fontWeight:"bold",
     color: "#f1efefff",
+  },
+  loadingText: {
+    // marginBottom:16,
+    fontSize: 15,
+    color: "rgb(186, 184, 184)",
   },
     wifiBar:{
     position:"absolute",

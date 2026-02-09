@@ -17,6 +17,7 @@ import {
   Button,
   ImageBackground,
   Image,
+  Modal
 } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import {
@@ -33,7 +34,7 @@ import  NetInfo  from "@react-native-community/netinfo";
 import { radarAPI, signalAPI } from "../../services/api";
 import { getUserData } from "../../services/auth";
 import ARRadarView from "../../components/ARRadarView";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "./../../hooks/useAuth";
 import { useSocket } from "../../hooks/useSocket";
 import { useRouter } from "expo-router";
 
@@ -112,6 +113,8 @@ const RadarScreen: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [networkConnected,setNetworkConnected] = useState<boolean>(false)
+  const [hiddenUsers,setHiddenUsers] = useState<NearbyUser[]>([])
+  const [isDisplayUsers , setIsDisplayUsers] = useState(false)
   const bannerRef = useRef<BannerAd>(null);
   
   const { user } = useAuth();
@@ -145,8 +148,6 @@ const RadarScreen: React.FC = () => {
       requestPermission();
     } else if (permission?.granted) {
       startLocationTracking();
-      // fetchNearbyUsers(currentLocation.lat,currentLocation.lon)
-      // loadSimulatedUsers();
       if (isConnected) {
         console.log("✅ Prêt à recevoir des signaux en temps réel!");
       }
@@ -270,16 +271,6 @@ const RadarScreen: React.FC = () => {
 
   console.log(`La précision est : ${currentLocation?.accuracy}`);
 
-  // const playSound = async () => {
-  //   try {
-  //     const { sound } = await Audio.Sound.createAsync(
-  //       require("../../assets/sound/sendsignal.wav")
-  //     );
-  //     await sound.playAsync();
-  //   } catch (error) {
-  //     console.error("Erreur de lecture audio:", error);
-  //   }
-  // };
   const playSignalSound = () => {
     player.seekTo(0); // Remet le son au début
     player.play(); // Joue le son
@@ -291,13 +282,7 @@ const RadarScreen: React.FC = () => {
       playerErrorSound.play(); // Joue le son
     };
   const fetchNearbyUsers = async (lat: number, lon: number) => {
-     if (!networkConnected) {
-            Alert.alert("📡 Hors ligne","Veuillez activer données mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay")
-         return 
-        } 
-        // else{
-        //   Alert.alert("🌐 Connexion rétablie","Vous êtes connectés à l'internet donnée mobile est activé")
-
+    
          if (!isVisible) return;
     
     const currentLat = lat || currentLocation?.lat;
@@ -339,38 +324,6 @@ const RadarScreen: React.FC = () => {
     }
   };
 
-  //   const handleDistanceChange = async (distance: number) => {
-  //     setSelectedDistance(distance);
-  //     console.log(` Distance changée: ${distance / 1000}km`);
-  //
-  //     // Relancer la recherche immédiatement
-  //     if (currentLocation) {
-  //       await fetchNearbyUsers(currentLocation.lat, currentLocation.lon);
-  //     }
-  //   };
-
-  // const loadSimulatedUsers = () => {
-  //   const mockUsers: NearbyUser[] = [
-  //     {
-  //       _id: "2",
-  //       username: "MarieCurie",
-  //       interest_count: 5,
-  //       distance: 25,
-  //       bearing: 120,
-  //       toSessionId: "session_2",
-  //     },
-  //     {
-  //       _id: "3",
-  //       username: "PierreMartin",
-  //       interest_count: 2,
-  //       distance: 80,
-  //       bearing: 270,
-  //       toSessionId: "session_3",
-  //     },
-  //   ];
-  //   setNearbyUsers(mockUsers);
-  // };
-
   const handleSendSignal = async (userId: string) => {
     try {
       const targetUser = nearbyUsers.find((user) => user._id === userId);
@@ -378,6 +331,10 @@ const RadarScreen: React.FC = () => {
         Alert.alert("Erreur", "Utilisateur non trouvé");
         return;
       }
+         if (!networkConnected) {  
+            Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
+            return
+          }
       Alert.alert(
         "Envoyer un signal",
         `Voulez-vous envoyer un signal à ${targetUser.username.toUpperCase()} avec ${targetUser.interests.count} l'interêt${targetUser.interests.count > 1 ? "s" :"" } commun${targetUser.interests.count > 1 ? "s" :"" } et distant de ${targetUser.distance}m ?`,
@@ -510,51 +467,33 @@ const RadarScreen: React.FC = () => {
       await fetchNearbyUsers(currentLocation.lat, currentLocation.lon);
     }
   };
+const displayHiddenUser =()=>{ 
+  const hiddenUser = nearbyUsers.filter((user) => user.privacySettings.showOnRadar===false)
+      setHiddenUsers(hiddenUser)
+       const displayUsers = !isDisplayUsers
+       setIsDisplayUsers(displayUsers)
+console.log('Hidden users are :',isDisplayUsers)
+ 
+}
+const cancelHiddenUsers = () =>{
+  const cancelHidden = !isDisplayUsers
+  setIsDisplayUsers(cancelHidden)
+}
 
-  //  COMPOSANT SÉLECTEUR DE DISTANCE
-  // const DistanceSelector = () => (
-  //   <View style={styles.distanceSelector}>
-  //     <Text style={styles.distanceTitle}>Rayon de recherche :</Text>
-  //     <ScrollView
-  //       horizontal
-  //       showsHorizontalScrollIndicator={false}
-  //       style={styles.distanceScrollView}
-  //     >
-  //       <View style={styles.distanceButtons}>
-  //         {DISTANCE_OPTIONS.map((option) => (
-  //           <TouchableOpacity
-  //             key={option.value}
-  //             style={[
-  //               styles.distanceButton,
-  //               selectedDistance === option.value &&
-  //                 styles.distanceButtonActive,
-  //             ]}
-  //             onPress={() => handleDistanceChange(option.value)}
-  //           >
-  //             <Text
-  //               style={[
-  //                 styles.distanceEmoji,
-  //                 selectedDistance === option.value &&
-  //                   styles.distanceEmojiActive,
-  //               ]}
-  //             >
-  //               {option.emoji}
-  //             </Text>
-  //             <Text
-  //               style={[
-  //                 styles.distanceLabel,
-  //                 selectedDistance === option.value &&
-  //                   styles.distanceLabelActive,
-  //               ]}
-  //             >
-  //               {option.label}
-  //             </Text>
-  //           </TouchableOpacity>
-  //         ))}
-  //       </View>
-  //     </ScrollView>
-  //   </View>
-  // );
+ if (networkConnected) {
+     return (
+        <View style={styles.centerContainer}>
+            <Ionicons
+           name="cloud-offline"
+           size={70}
+           color={"rgb(249, 244, 244)"}
+          />
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
+        </View>
+      );
+ }
 
   if (!permission) {
     return (
@@ -619,8 +558,52 @@ const RadarScreen: React.FC = () => {
           {isConnected ? "🔴 En ligne" : "⚫ Hors ligne"}
         </Text>
       </View>
+      { isDisplayUsers &&
+      <View style={styles.hiddenUsersContainer}>
+          <View style={styles.hiddenUsersHeader}>
+            <Ionicons      
+                name={"person-outline"} 
+                size={34} 
+               color={"#d4d1d1ff"} 
+              
+            />
+             <Text style={styles.hiddenLength}>
+                {hiddenUsers.length}
+          
+      </Text>
+              <Text style={styles.hiddenTitle}>
+          Utilisateur{hiddenUsers.length < 0 ? "s" :"" } caché{hiddenUsers.length < 0 ? "s" :"" }
+      </Text>
+              <TouchableOpacity onPress={cancelHiddenUsers}>
+             <Ionicons      
+                name={"close-circle-outline"} 
+                size={34} 
+               color={"#d4d1d1ff"} 
+              
+            />
+            </TouchableOpacity> 
+      </View>
+          <View style={styles.hiddenUsersBody} >
+             <Text>
+          Bonjours les amies 
+      </Text>
+      </View>
+     
+      </View>
+   
+      }
+        
       {/* Contrôles */}
       <View style={styles.controls}>
+      
+        <TouchableOpacity style={styles.controlButton}  onPress={displayHiddenUser}>
+             <Ionicons      
+                name={"menu"} 
+                size={34} 
+               color={"#d4d1d1ff"} 
+              
+            />
+        </TouchableOpacity>
       
         <TouchableOpacity style={styles.controlButton}  onPress={navigateToProfile}>
              <Ionicons      
@@ -637,13 +620,13 @@ const RadarScreen: React.FC = () => {
                color={"white"} 
                />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton} onPress={toggleVisibility}>
+        {/* <TouchableOpacity style={styles.controlButton} onPress={toggleVisibility}>
                <Ionicons 
                 name={isVisible ? "eye-outline":"eye"} 
                 size={34} 
                color={"white"} 
                />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
        
       </View>
       {/* 
@@ -651,7 +634,7 @@ const RadarScreen: React.FC = () => {
       <View style={styles.statusBar}>
     
 
-        {currentLocation && (
+        {/* {currentLocation && (
           <Text>
             {currentLocation.accuracy <= 20 ? (
               <Text style={styles.statusText}>
@@ -667,7 +650,7 @@ const RadarScreen: React.FC = () => {
               </Text>
             )}
           </Text>
-        )}
+        )} */}
       
       </View>
         <BannerAd ref={bannerRef} unitId={adUnitIdBan} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
@@ -684,6 +667,69 @@ const styles = StyleSheet.create({
   top:-70,
   right:8
   },
+hiddenUsersContainer:{
+  flex: 1,
+  position:"absolute",
+  right:0,
+  top:60,
+  height:"70%",
+  width:"80%",
+    // justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#150f0f",
+    borderRadius:10,
+    zIndex:1000
+},
+hiddenUsersHeader:{
+  height:"15%",
+   flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth:1,
+    borderBottomColor:"#989595",
+},
+hiddenTitle:{
+  color:"#fff",
+  width:"60%",
+fontSize:17,
+fontWeight:"bold",
+left:20,
+bottom:-6
+},
+hiddenLength:{
+  position:"absolute",
+  height:20,
+  width:30,
+  left:20,
+  bottom:40,
+  textAlign:"center",
+  backgroundColor:"#f3e70c",
+  borderRadius:10,
+  color:"#110f0f",
+  fontWeight:"bold",
+  fontSize:16
+},
+hiddenUsersBody:{
+ 
+},
+centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#030914ff",
+  },
+  loadingTitle: {
+    marginTop: 16,
+    marginBottom:16,
+    fontSize: 20,
+    fontWeight:"bold",
+    color: "#f1efefff",
+  },
+  loadingText: {
+    fontSize: 15,
+    color: "rgb(161, 160, 160)",
+  },
+
   profilePicture: {
     height: 50,
     width: 50,
@@ -692,20 +738,7 @@ const styles = StyleSheet.create({
     top: -100,
     position: "absolute",
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 20,
-    
-  },
-  loadingText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
+
   errorText: {
     fontSize: 20,
     fontWeight: "bold",
@@ -760,7 +793,7 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     position: "absolute",
-    top: -100,
+    top: -60,
     left: 300,
     right: 0,
     bottom: 590,

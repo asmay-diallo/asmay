@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
-const API_BASE_URL = 'http://10.60.136.123:5000/api'
+const API_BASE_URL = 'http://10.88.166.123:5000/api'
 // const API_BASE_URL = 'https://asmay-backend.onrender.com/api'
 
 export const api = axios.create({
@@ -192,8 +192,6 @@ export const radarAPI = {
     api.put<ApiResponse<any>>('/users/location', { latitude, longitude }),
 };
 
-
-
 export const signalAPI = {
   send: (toSessionId: string) => 
     api.post<SignalResponse>('/signals/send', { toSessionId }),
@@ -256,44 +254,3 @@ export const chatAPI = {
     }
   },
 }
-const USER_DATA_KEY = 'user_data';
-const TOKEN_KEY = 'auth_token';
-
-export const saveUserData = async (user: User, token: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-  } catch (error) {
-    console.error('Error saving user data:', error);
-    throw error;
-  }
-};
-
-export const getUserData = async (): Promise<{ user: User | null; token: string | null }> => {
-  try {
-    const [userData, token] = await Promise.all([
-      AsyncStorage.getItem(USER_DATA_KEY),
-      AsyncStorage.getItem(TOKEN_KEY)
-    ]);
-    
-    return {
-      user: userData ? JSON.parse(userData) : null,
-      token
-    };
-  } catch (error) {
-    console.error('Error getting user data:', error);
-    return { user: null, token: null };
-  }
-};
-
-export const removeUserData = async (): Promise<void> => {
-//   try {
-//     await Promise.all([
-//       AsyncStorage.removeItem(USER_DATA_KEY),
-//       AsyncStorage.removeItem(TOKEN_KEY)
-//     ]);
-//   } catch (error) {
-//     console.error('Error removing user data:', error);
-//     throw error;
-//   }
-};

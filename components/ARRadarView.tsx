@@ -45,7 +45,7 @@ const ARRadarView: React.FC<ARRadarViewProps> = ({
   };
 
   const calculateScreenPosition = (distance: number, bearing: number) => {
-    const maxDisplayDistance = 100;
+    const maxDisplayDistance = 10000000;
     const normalizedDistance = Math.min(distance, maxDisplayDistance);
     const radarRadius = Math.min(width, height) / 2 - 50;
     const scale = radarRadius / maxDisplayDistance;
@@ -61,9 +61,9 @@ const ARRadarView: React.FC<ARRadarViewProps> = ({
   };
 
   const getDistanceStyle = (distance: number) => {
-    if (distance <= 25) return styles.markerVeryClose;
-    if (distance <= 50) return styles.markerClose;
-    if (distance <= 75) return styles.markerMedium;
+    if (distance <= 100000) return styles.markerVeryClose;
+    if (distance <= 500000) return styles.markerClose;
+    if (distance <= 10000000) return styles.markerMedium;
     return styles.markerFar;
   };
 
@@ -85,10 +85,10 @@ const ARRadarView: React.FC<ARRadarViewProps> = ({
         const isVisibleUser = user.privacySettings.showOnRadar
         setIsVisibleUserOnRadar(isVisibleUser)
 
-        if(!isVisibleUserOnRadar ){
-          Alert.alert("Invisible Asmayien📡",`${user.username.toUpperCase()} est en ligne, mais son Asmay est fermé. Attendez qu'il soit activé sinon vous ne pouvez pas lui voir pour envoyer un signal sur Asmay`)
-          return ;
-        }
+        // if(!isVisibleUserOnRadar ){
+        //   Alert.alert(" 📡Invisible Asmayien",`${user.username.toUpperCase()} est en ligne, mais son Asmay est fermé. Attendez qu'il soit activé sinon vous ne pouvez pas lui voir pour envoyer un signal sur Asmay`)
+        //   return ;
+        // }
 
         return (
           <TouchableOpacity
@@ -119,8 +119,16 @@ const ARRadarView: React.FC<ARRadarViewProps> = ({
                     
                   
                   </View>
-                  
-                  <Text style={styles.markerDistance}>{user.distance}m</Text>
+                 {user.distance < 1000  ?
+                    <Text style={styles.markerDistance}>
+                    {user.distance}m
+                    </Text>           
+                           :
+                        <Text style={styles.markerDistance}>
+                    {(user.distance/1000).toFixed(0)}km
+                    </Text>  
+                 } 
+                 
                   <Text style={styles.markerName} numberOfLines={1}>
                     {user.username}
                   </Text>

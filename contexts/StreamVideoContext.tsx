@@ -1,91 +1,4 @@
-// import React, { createContext, useContext, useState, useEffect ,ReactNode} from 'react';
-// import { StreamVideoClient } from '@stream-io/video-react-native-sdk';
-// import { userAPI } from '../services/api';
-// import { useAuth } from '../hooks/useAuth';
-// interface AuthProviderProps {
-//   children: ReactNode;
-// }
-// const StreamVideoContext = createContext(null);
-// 
-// export const StreamVideoProvider = ({ children }) => {
-//   const [streamClient, setStreamClient] = useState(null);
-//   const [isInitializing, setIsInitializing] = useState(false);
-//   const { user, isAuthenticated } = useAuth();
-// 
-//   // Initialiser le client Stream lorsque l'utilisateur est connecté
-//   useEffect(() => {
-//     if (isAuthenticated && user && !streamClient) {
-//       initializeStreamClient();
-//     }
-//     
-//     // Nettoyage à la déconnexion
-//     return () => {
-//       if (streamClient) {
-//         streamClient.disconnectUser();
-//         setStreamClient(null);
-//       }
-//     };
-//   }, [isAuthenticated, user]);
-// 
-//   const initializeStreamClient = async () => {
-//     if (isInitializing) return;
-//     
-//     try {
-//       setIsInitializing(true);
-//       
-//       // 1. Récupérer un token depuis VOTRE backend
-//       const response = await userAPI.getStreamToken();
-//       
-//       if (response.data.success) {
-//         const { token, streamUser } = response.data.data;
-//         
-//         // 2. Créer le client Stream
-//         const client = new StreamVideoClient({
-//           apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY, // À mettre dans .env frontend
-//           user: streamUser,
-//           token,
-//           options: {
-//             logLevel: 'warn',
-//           },
-//         });
-//         
-//         setStreamClient(client);
-//         console.log('✅ Stream Video client initialisé pour:', streamUser.name);
-//       }
-//     } catch (error) {
-//       console.error('❌ Erreur initialisation Stream Video:', error);
-//     } finally {
-//       setIsInitializing(false);
-//     }
-//   };
-// 
-//   // Fonction pour créer un appel
-//   const createCall = async (callType = 'default', callId = null) => {
-//     if (!streamClient) throw new Error('Stream client non initialisé');
-//     
-//     const call = streamClient.call(callType, callId || `call_${Date.now()}`);
-//     return call;
-//   };
-// 
-//   return (
-//     <StreamVideoContext.Provider value={{ 
-//       streamClient, 
-//       isInitializing,
-//       createCall,
-//       initializeStreamClient 
-//     }}>
-//       {children}
-//     </StreamVideoContext.Provider>
-//   );
-// };
-// 
-// export const useStreamVideo = () => {
-//   const context = useContext(StreamVideoContext);
-//   if (!context) {
-//     throw new Error('useStreamVideo doit être utilisé dans StreamVideoProvider');
-//   }
-//   return context;
-// };
+
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { StreamVideoClient } from '@stream-io/video-react-native-sdk';
@@ -105,92 +18,38 @@ interface StreamVideoProviderProps {
   children: ReactNode;
 }
 
-
-    // Initialiser le client Stream lorsque l'utilisateur est connecté
-  // useEffect(() => {
-  //   if (isAuthenticated && user && !streamClient) {
-  //     initializeStreamClient();
-  //   }
-  //   
-  //   // Nettoyage à la déconnexion
-  //   return () => {
-  //     if (streamClient) {
-  //       streamClient.disconnectUser();
-  //       setStreamClient(null);
-  //     }
-  //   };
-  // }, [isAuthenticated, user]);
-
-
 export const StreamVideoProvider: React.FC<StreamVideoProviderProps> = ({ children }) => {
   const [streamClient, setStreamClient] = useState<StreamVideoClient | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const { user, isAuthenticated, token } = useAuth(); // Prenez aussi le token
+  const [isInitializing, setIsInitializing] = useState(false); 
+   const { user,  token, isAuthenticated } = useAuth();
 
-  // Initialiser le client Stream lorsque l'utilisateur est connecté
   useEffect(() => {
-    console.log('🔍 [DEBUG] StreamVideoProvider useEffect:', {
+  console.log('🔍  StreamVideoProvider useEffect:', {
+    isAuthenticated,
+    hasUser: !!user,
+    hasUserId: user?._id, // ← Vérifiez l'ID !
+    hasToken: !!token,
+    hasStreamClient: !!streamClient
+  });
+  
+  if (isAuthenticated && user?._id && token && !streamClient) {
+    console.log(' Conditions remplies, init Stream pour user:', user._id);
+    initializeStreamClient();
+  } else if (!user?._id) {
+    console.log('⏸️ User ID manquant, attente...');
+  }
+}, [isAuthenticated, user, token]); 
+
+  const initializeStreamClient = async () => {
+     if (!isAuthenticated || !user || !token) {
+    console.log('🚫 initializeStreamClient BLOCKED - Not authenticated', {
       isAuthenticated,
       hasUser: !!user,
       hasToken: !!token,
-      hasStreamClient: !!streamClient
+      userId: user?._id
     });
-    
-    // 🔥 CORRECTION : Vérifiez aussi le TOKEN, pas juste isAuthenticated
-    if (isAuthenticated && user && token && !streamClient) {
-      console.log('🚀 Conditions remplies, init Stream...');
-      initializeStreamClient();
-    } else {
-      console.log('⏸️ Conditions NON remplies:', {
-        isAuth: isAuthenticated,
-        user: !!user,
-        token: !!token,
-        streamClient: !!streamClient
-      });
-    }
-    
-    // Nettoyage à la déconnexion
-    return () => {
-      if (streamClient) {
-        streamClient.disconnectUser();
-        setStreamClient(null);
-      }
-    };
-  }, [isAuthenticated, user, token]);
-  
-  // const initializeStreamClient = async () => {
-  //   if (isInitializing) return;
-  //   
-  //   try {
-  //     setIsInitializing(true);
-  //     
-  //     // 1. Récupérer un token depuis VOTRE backend
-  //     const response = await userAPI.getStreamToken();
-  //     
-  //     if (response.data.success) {
-  //       const { token, streamUser } = response.data.data;
-  //       
-  //       // 2. Créer le client Stream
-  //       const client = new StreamVideoClient({
-  //         apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY, // À mettre dans .env frontend
-  //         user: streamUser,
-  //         token,
-  //         options: {
-  //           logLevel: 'warn',
-  //         },
-  //       });
-  //       
-  //       setStreamClient(client);
-  //       console.log('✅ Stream Video client initialisé pour:', streamUser.name);
-  //     }
-  //   } catch (error) {
-  //     console.error('❌ Erreur initialisation Stream Video:', error);
-  //   } finally {
-  //     setIsInitializing(false);
-  //   }
-  // };
-
-  const initializeStreamClient = async () => {
+    return; 
+  }
   if (isInitializing) return;
   
   try {
@@ -237,12 +96,12 @@ export const StreamVideoProvider: React.FC<StreamVideoProviderProps> = ({ childr
       console.error('❌ API returned error:', response.data.message);
     }
   } catch (error: any) {
-    console.error('❌ Erreur initialisation Stream Video:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      url: error.config?.url
-    });
+    // console.error('❌ Erreur initialisation Stream Video:', {
+    //   message: error.message,
+    //   status: error.response?.status,
+    //   data: error.response?.data,
+    //   url: error.config?.url
+    // });
   } finally {
     setIsInitializing(false);
   }

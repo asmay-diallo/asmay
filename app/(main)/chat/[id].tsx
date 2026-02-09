@@ -1,575 +1,5 @@
-// import React, { useState, useEffect, useRef } from "react";
-// import {
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   StyleSheet,
-//   FlatList,
-//   Alert,
-//   ActivityIndicator,
-//   KeyboardAvoidingView,
-//   Platform,
-//   Keyboard,
-//   ImageBackground,
-// } from "react-native";
-// import { useLocalSearchParams } from "expo-router";
-// import { useAudioRecorder, useAudioPlayer, Audio } from 'expo-audio';
-// import * as FileSystem from 'expo-file-system';
-// import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-// import { chatAPI } from "../../../services/api";
-// import { useAuth } from "../../../hooks/useAuth";
-// import { useSocket } from "../../../hooks/useSocket";
-// import { Message } from "../../../types";
-// import Input from "@/components/Input";
-//
-// export default function ChatScreen() {
-//   const { id: chatId } = useLocalSearchParams();
-//   const [messages, setMessages] = useState<Message[]>([]);
-//   const [newMessage, setNewMessage] = useState("");
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [isSending, setIsSending] = useState(false);
-// const {
-//   isRecording,        // ✅ Booléen: true si enregistrement en cours
-//   isPaused,           // ✅ Booléen: true si enregistrement en pause
-//   startRecording,     // ✅ Fonction: démarre l'enregistrement
-//   pauseRecording,     // ✅ Fonction: met en pause
-//   stopRecording,      // ✅ Fonction: arrête et retourne l'URI
-//   resumeRecording,    // ✅ Fonction: reprend après pause
-//   recording,          // ✅ Objet: infos sur l'enregistrement courant (URI, etc.)
-// } = useAudioRecorder({
-//   // Vos options d'enregistrement (inchangées)
-//   isMeteringEnabled: true,
-//   android: {
-//     extension: '.m4a',
-//     outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-//     audioEncoder: Audio.AndroidAudioEncoder.AAC,
-//     sampleRate: 44100,
-//     numberOfChannels: 1,
-//     bitRate: 128000,
-//   },
-//   ios: {
-//     extension: '.m4a',
-//     outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-//     audioQuality: Audio.IOSAudioQuality.MEDIUM,
-//     sampleRate: 44100,
-//     numberOfChannels: 1,
-//     bitRate: 128000,
-//     linearPCMBitDepth: 16,
-//     linearPCMIsBigEndian: false,
-//     linearPCMIsFloat: false,
-//   },
-// });
-//
-//   const [isRecordingUI, setIsRecordingUI] = useState(false);
-//   const [showCancelHint, setShowCancelHint] = useState(false);
-//   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-//
-//   const { user } = useAuth();
-//   const { socket, isConnected } = useSocket();
-//   const flatListRef = useRef<FlatList>(null);
-//
-//   useEffect(() => {
-//     loadMessages();
-//     setupSocketListeners();
-//
-//     if (socket && chatId) {
-//       socket.emit("join_chat", chatId);
-//     }
-//
-//     return () => {
-//       if (socket && chatId) {
-//         socket.emit("leave_chat", chatId);
-//         socket.off("new_message");
-//         socket.off("message_sent");
-//         socket.off("message_error");
-//       }
-//     };
-//   }, [chatId, socket]);
-//
-//   const messageSend = useAudioPlayer(require("../../../assets/sound/sendMessage.mp3"));
-//   const messageSent = useAudioPlayer(require("../../../assets/sound/correctSound.mp3"));
-//  const sendMessageSound = () => {
-//     messageSend.seekTo(0); // Remet le son au début
-//     messageSend.play(); // Joue le son
-//   };
-//
-//  const sentMessageSound = () => {
-//     messageSent.seekTo(0); // Remet le son au début
-//     messageSent.play(); // Joue le son
-//   };
-//
-//
-//   const setupSocketListeners = () => {
-//     // loadMessages();
-//     if (!socket) return
-//
-//     // Utiliser un Set pour tracker les IDs déjà reçus
-//     const receivedMessageIds = new Set();
-//
-//     // Écouter les nouveaux messages
-//     socket.on("new_message", (messageData: Message) => {
-//       sentMessageSound()
-//
-//       console.log("📨 Nouveau message reçu:", {
-//         id: messageData._id,
-//         from: messageData.sender.username,
-//         isMe: messageData.sender._id === user?._id,
-//       });
-//
-//       //  VÉRIFICATION ANTI-DOUBLONS RENFORCÉE
-//       if (messageData.chat === chatId) {
-//         // 1. Vérifier si c'est notre propre message
-//         if (messageData.sender._id === user?._id) {
-//           console.log("🚫 Ignoré - Notre propre message (déjà affiché)");
-//           return;
-//         }
-//
-//         // 2. Vérifier si l'ID existe déjà dans le Set
-//         if (receivedMessageIds.has(messageData._id)) {
-//           console.log("🔄 Ignoré - Message déjà reçu (doublon socket)");
-//           return;
-//         }
-//
-//         // 3. Vérifier si le message existe déjà dans l'état local
-//         setMessages((prev) => {
-//           const alreadyExists = prev.some(
-//             (msg) =>
-//               msg._id === messageData._id ||
-//               msg._id === `temp-${messageData._id}` ||
-//               (msg.content === messageData.content &&
-//                 msg.sender._id === messageData.sender._id &&
-//                 Math.abs(
-//                   new Date(msg.createdAt).getTime() -
-//                     new Date(messageData.createdAt).getTime()
-//                 ) < 1000)
-//           );
-//
-//           if (alreadyExists) {
-//             console.log("🔄 Ignoré - Message déjà dans la liste");
-//             return prev;
-//           }
-//
-//           // Ajouter l'ID au Set pour éviter les futurs doublons
-//           receivedMessageIds.add(messageData._id);
-//
-//           return [...prev, messageData];
-//         });
-//
-//         scrollToBottom();
-//       }
-//     });
-//
-//     // Confirmation d'envoi - Nettoyer le message temporaire
-//     socket.on("message_sent", (data: { messageId: string; tempId: string }) => {
-//       // sendMessageSound()
-//
-//       console.log("✅ Message confirmé:", data);
-//
-//       setMessages((prev) => {
-//         //  NETTOYAGE : Remplacer le message temporaire par le vrai
-//         const newMessages = prev.filter(
-//           (msg) => !(msg._id === data.tempId || msg._id === data.messageId)
-//         );
-//
-//         return [
-//           ...newMessages,
-//           {
-//             // Créer un nouvel objet avec l'ID réel
-//             ...prev.find((msg) => msg._id === data.tempId),
-//             _id: data.messageId,
-//             isSending: false,
-//             hasError: false,
-//           },
-//         ];
-//       });
-//
-//       setIsSending(false);
-//     });
-//
-//     socket.on("message_error", (error: { tempId?: string; error: string }) => {
-//       if (error.tempId) {
-//         setMessages((prev) =>
-//           prev.map((msg) =>
-//             msg._id === error.tempId
-//               ? { ...msg, hasError: true, isSending: false }
-//               : msg
-//           )
-//         );
-//       }
-//       setIsSending(false);
-//       // Alert.alert("Erreur", "Impossible d'envoyer le message");
-//     });
-//   };
-//
-//   const loadMessages = async () => {
-//     try {
-//       // setIsLoading(true);
-//       const response = await chatAPI.getMessages(chatId as string);
-//
-//       if (response.data.success && response.data.data) {
-//         const loadedMessages = response.data.data;
-//         console.log(`✅ ${loadedMessages.length} messages chargés`);
-//         setMessages(loadedMessages);
-//         setTimeout(() => scrollToBottom(), 200);
-//       } else {
-//         throw new Error(
-//           response.data.message || "Erreur de chargement des messages"
-//         );
-//       }
-//     } catch (error) {
-//       // Alert.alert("Erreur", "Veuillez réessayer");
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-//
-//   const scrollToBottom = () => {
-//     if (flatListRef.current && messages.length > 0) {
-//       setTimeout(() => {
-//         flatListRef.current?.scrollToEnd({ animated: true });
-//       }, 100);
-//     }
-//   };
-//
-//   const sendMessage = async () => {
-//     const messageContent = newMessage.trim();
-//     if (!messageContent || isSending) return;
-//
-//     const tempMessage: Message = {
-//       _id: `temp-${Date.now()}`,
-//       sender: {
-//         _id: user?._id || "",
-//         username: user?.username || "Vous",
-//       },
-//       content: messageContent,
-//       chat: chatId as string,
-//       createdAt: new Date().toISOString(),
-//       isSending: true,
-//     };
-//
-//     try {
-//       setIsSending(true);
-//       setNewMessage("");
-//       setMessages((prev) => [...prev, tempMessage]);
-//       scrollToBottom();
-//
-//       if (socket && isConnected) {
-//         socket.emit("send_message", {
-//           chatId: chatId,
-//           content: messageContent,
-//           tempId: tempMessage._id,
-//         });
-//       } else {
-//         const response = await chatAPI.sendMessage(
-//           chatId as string,
-//           messageContent
-//         );
-//
-//         if (response.data.success) {
-//           const newMessageData = response.data.data;
-//           setMessages((prev) =>
-//             prev.map((msg) =>
-//               msg._id === tempMessage._id
-//                 ? { ...newMessageData, isSending: false }
-//                 : msg
-//             )
-//           );
-//         }
-//
-//       }
-//     } catch (error) {
-//       setMessages((prev) =>
-//         prev.map((msg) =>
-//           msg._id === tempMessage._id
-//             ? { ...msg, hasError: true, isSending: false }
-//             : msg
-//         )
-//       );
-//       // Alert.alert("Erreur", "Veuillez réessayer !");
-//     } finally {
-//       setIsSending(false);
-//     }
-//   };
-//
-//   const retrySendMessage = (messageId: string) => {
-//     const failedMessage = messages.find((msg) => msg._id === messageId);
-//     if (failedMessage) {
-//       setNewMessage(failedMessage.content);
-//       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-//     }
-//   };
-//
-//   const renderMessage = ({ item }: { item: Message }) => {
-//     // const isMyMessage = item.sender._id === user?._id;
-//     //  VÉRIFICATION DE SÉCURIT
-//     if (!item || !item.sender) {
-//       // console.error("Message invalide:", item);
-//       return null; // ou un placeholder
-//     }
-//
-//     const isMyMessage = item.sender._id === user?._id;
-//     return (
-//       <View
-//         style={[
-//           styles.messageContainer,
-//           isMyMessage ? styles.myMessage : styles.theirMessage,
-//           item.hasError && styles.messageError,
-//         ]}
-//       >
-//         {!isMyMessage && (
-//           <Text style={styles.senderName}>{item.sender.username}</Text>
-//         )}
-//         <Text style={[styles.messageText, isMyMessage && styles.myMessageText]}>
-//           {item.content}
-//         </Text>
-//         <View style={styles.messageFooter}>
-//           <Text style={[styles.time, isMyMessage && styles.myTime]}>
-//             {new Date(item.createdAt).toLocaleTimeString([], {
-//               hour: "2-digit",
-//               minute: "2-digit",
-//             })}
-//           </Text>
-//           {isMyMessage && (
-//             <View style={styles.statusContainer}>
-//               {item.isSending && (
-//                 <ActivityIndicator size="small" color="#666" />
-//               )}
-//               {item.hasError && (
-//                 <TouchableOpacity onPress={() => retrySendMessage(item._id)}>
-//                   <Text style={styles.retryText}>🔄</Text>
-//                 </TouchableOpacity>
-//               )}
-//             </View>
-//           )}
-//         </View>
-//       </View>
-//     );
-//   };
-//   //
-//   //   if (isLoading) {
-//   //     return (
-//   //       <View style={styles.center}>
-//   //         <ActivityIndicator size="large" color="#007bff" />
-//   //         <Text>Chargement des messages...</Text>
-//   //       </View>
-//   //     );
-//   //   }
-//
-//   //  CORRECTION PRINCIPALE : UtiliseKeyboardAvoidingView
-//   return (
-//     <KeyboardAvoidingView
-//       style={styles.clavier}
-//       behavior={Platform.OS === "ios" ? "padding" : "height"}
-//       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 96}
-//     >
-//       <ImageBackground
-//         source={require("../../../assets/images/asmay-icon.png")}
-//         resizeMode="cover"
-//         style={styles.container}
-//       >
-//         {/* Liste des messages */}
-//         <FlatList
-//           ref={flatListRef}
-//           data={messages}
-//           renderItem={renderMessage}
-//           keyExtractor={(item) => item._id}
-//           contentContainerStyle={styles.messagesList}
-//           onContentSizeChange={scrollToBottom}
-//           onLayout={scrollToBottom}
-//           keyboardShouldPersistTaps="handled"
-//           showsVerticalScrollIndicator={false}
-//           keyboardDismissMode="interactive"
-//           ListEmptyComponent={
-//             <View style={styles.empty}>
-//               <Text style={styles.emptyText}>Aucun message</Text>
-//               <Text style={styles.emptySubtext}>
-//                 Envoyez le premier message !
-//               </Text>
-//             </View>
-//           }
-//         />
-//
-//         {/* Zone de saisie */}
-//         <View style={styles.inputContainer}>
-//           <Input
-//             placeholder="Tapez votre message..."
-//             style={styles.input}
-//             value={newMessage}
-//             onChangeText={setNewMessage}
-//             multiline
-//             maxLength={500}
-//             onFocus={scrollToBottom}
-//           />
-//           <TouchableOpacity
-//             style={[
-//               styles.sendButton,
-//               (!newMessage.trim() || isSending) && styles.disabled,
-//             ]}
-//             onPress={sendMessage}
-//             disabled={!newMessage.trim() || isSending}
-//           >
-//             {isSending ? (
-//               <ActivityIndicator size="small" color="#fff" />
-//             ) : (
-//               <Text style={styles.sendText}>➤</Text>
-//             )}
-//           </TouchableOpacity>
-//         </View>
-//       </ImageBackground>
-//     </KeyboardAvoidingView>
-//   );
-// }
-//
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//   },
-//   center: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   empty: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     paddingVertical: 50,
-//   },
-//   emptyText: {
-//     fontSize: 16,
-//     color: "#666",
-//   },
-//   emptySubtext: {
-//     fontSize: 14,
-//     color: "#999",
-//     marginTop: 5,
-//   },
-//   messagesList: {
-//     padding: 10,
-//     paddingBottom: 20,
-//   },
-//   messageContainer: {
-//     minWidth: "50%",
-//     padding: 8,
-//     borderRadius: 14,
-//     marginBottom: 8,
-//   },
-//   myMessage: {
-//     alignSelf: "flex-end",
-//     backgroundColor: "#007bff",
-//     borderBottomRightRadius: 0,
-//     borderTopLeftRadius: 0,
-//     elevation: 30,
-//   },
-//   theirMessage: {
-//     alignSelf: "flex-start",
-//     backgroundColor: "#ffffffff",
-//     borderBottomLeftRadius: 0,
-//     borderTopRightRadius: 0,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 1 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 1,
-//     elevation: 30,
-//   },
-//   messageError: {
-//     backgroundColor: "#ffebee",
-//     borderColor: "#f44336",
-//     borderWidth: 1,
-//   },
-//   senderName: {
-//     fontSize: 12,
-//     color: "#666",
-//     marginBottom: 4,
-//     fontWeight: "500",
-//   },
-//   messageText: {
-//     fontSize: 16,
-//     color: "#000",
-//     lineHeight: 20,
-//   },
-//   clavier: {
-//     flex: 1,
-//   },
-//   myMessageText: {
-//     color: "#fff",
-//   },
-//   messageFooter: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginTop: 4,
-//   },
-//   time: {
-//     fontSize: 10,
-//     color: "#666",
-//   },
-//   myTime: {
-//     color: "rgba(255, 255, 255, 0.7)",
-//   },
-//   statusContainer: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     marginLeft: 8,
-//   },
-//   retryText: {
-//     fontSize: 14,
-//     color: "#f44336",
-//   },
-//   inputContainer: {
-//     flexDirection: "row",
-//     padding: 10,
-//     alignItems: "center",
-//     backgroundColor: "#fff",
-//     borderTopWidth: 1,
-//     borderTopColor: "#e0e0e0",
-//     paddingBottom: Platform.OS === "ios" ? 10 : 10, // Plus d'espace sur iOS
-//   },
-//   input: {
-//     flex: 1,
-//     minHeight: 44,
-//     maxHeight: 90,
-//     minWidth: 260,
-//     maxWidth: 265,
-//     borderWidth: 1,
-//     borderColor: "#ddd",
-//     borderRadius: 22,
-//     paddingHorizontal: 16,
-//     paddingVertical: Platform.OS === "ios" ? 12 : 10,
-//     marginRight: 10,
-//     marginTop: 10,
-//     backgroundColor: "#ece9e9ff",
-//     fontSize: 16,
-//     elevation: 4,
-//   },
-//   sendButton: {
-//     backgroundColor: "#007bff",
-//     width: 44,
-//     height: 44,
-//     borderRadius: 22,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     marginTop: -4,
-//
-//     elevation: 4,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 1 },
-//     shadowOpacity: 0.2,
-//     shadowRadius: 1.5,
-//   },
-//   disabled: {
-//     backgroundColor: "#cccccc",
-//   },
-//   sendText: {
-//     color: "#fff",
-//     fontSize: 18,
-//     fontWeight: "bold",
-//     transform: [{ rotate: "0deg" }],
-//   },
-// });
 
 //--------------------------
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -587,7 +17,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useLocalSearchParams,useRouter } from "expo-router";
-import { Audio } from "expo-av"; // ✅ CHANGÉ: expo-av au lieu de expo-audio
+import { Audio } from "expo-av"; 
 import {
   useAudioRecorder,
   useAudioPlayer,
@@ -596,12 +26,11 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { chatAPI } from "../../../services/api";
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "./../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
 import { useStreamVideo } from "@/contexts/StreamVideoContext";
 import { Message } from "../../../types";
 import Input from "@/components/Input";
-import { translations } from "@stream-io/video-react-native-sdk";
 
 export default function ChatScreen() {
   const { id: chatId } = useLocalSearchParams();
@@ -891,7 +320,7 @@ export default function ChatScreen() {
   const audioPlayer = useAudioPlayer();
   const playAudioMessage = async (audioUrl: string) => {
     if (audioUrl && audioUrl.startsWith("/")) {
-      audioUrl = `http://10.60.136.123${audioUrl}`;
+      audioUrl = `http://10.88.166.123:5000${audioUrl}`;
     }
     try {
       await audioPlayer.replace({ uri: audioUrl });
@@ -935,21 +364,21 @@ export default function ChatScreen() {
       });
       
       // Optionnel : Envoyer une notification à l'autre participant via Socket.io
-      // if (socket && isConnected) {
-      //   socket.emit('video_call_initiated', {
-      //     chatId,
-      //     callId: call.id,
-      //     callerId: user._id,
-      //     callerName: user.username
-      //   });
-      // }
+      if (socket && isConnected) {
+        socket.emit('video_call_initiated', {
+          chatId,
+          callId: call.id,
+          callerId: user?._id,
+          callerName: user?.username
+        });
+      }
     } catch (error) {
       console.error('❌ Erreur démarrage appel vidéo:', error);
       Alert.alert('Erreur', 'Impossible de démarrer l\'appel vidéo');
     }
   };
 
-  // ==================== FONCTIONS ORIGINALES DU CHAT (inchangées) ====================
+  // ==================== FONCTIONS ORIGINALES DU CHAT
 
   const setupSocketListeners = () => {
     if (!socket) return;
@@ -1254,19 +683,12 @@ export default function ChatScreen() {
             style={styles.voiceMessageContainer}
           >
             <Text style={[styles.voiceIcon, isMyMessage && styles.myVoiceIcon]}>
-              {isMyMessage ? 
                    <Ionicons      
                               name={"mic"} 
-                              size={24} 
-                             color={"black"} 
+                              size={27} 
+                             color={"red"} 
                           />
-              :      <Ionicons
-                                      name={"mic"} 
-                              size={24} 
-                             color={"white"} 
-                          />   
-              
-              }
+             
             </Text>
             <View style={styles.voiceMessageInfo}>
               <Text
@@ -1305,8 +727,15 @@ export default function ChatScreen() {
           </Text>
           {isMyMessage && (
             <View style={styles.statusContainer}>
-              {item.isSending && (
-                <ActivityIndicator size="small" color="#666" />
+              {item.isSending ? (
+                <ActivityIndicator size="small" color="#fbf6f6" />
+               
+               ) :( <Ionicons      
+                              name={"eye"} 
+                              size={24} 
+                             color={"white"} 
+                             style={styles.backButton}
+                          />
               )}
               {item.hasError && (
                 <TouchableOpacity onPress={() => retrySendMessage(item._id)}>
@@ -1336,14 +765,14 @@ export default function ChatScreen() {
            <View style={styles.header}>
           <TouchableOpacity onPress={() => router.navigate("/(main)/message")}>
               <Ionicons      
-                              name={"home"} 
+                              name={"arrow-back"} 
                               size={24} 
                              color={"white"} 
                              style={styles.backButton}
                           />
           </TouchableOpacity>
-            {/* 👈 BOUTON APPEL VIDÉO */}
-          <TouchableOpacity 
+            {/*  BOUTON APPEL VIDÉO */}
+          {/* <TouchableOpacity 
             style={styles.callButton}
             onPress={startVideoCall}
             disabled={!streamClient}
@@ -1353,7 +782,7 @@ export default function ChatScreen() {
                               size={24} 
                              color={"white"} 
                           />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         {/* Liste des messages */}
         <FlatList

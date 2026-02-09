@@ -12,7 +12,7 @@ import {
   Button,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useAuth } from "@/hooks/useAuth";
+
 import { useSocket } from "@/hooks/useSocket";
 import { signalAPI } from "@/services/api";
 import { useRouter } from "expo-router";
@@ -23,7 +23,7 @@ import {
   TestIds,
   AdEventType,
 } from "react-native-google-mobile-ads";
-
+import {useAuth} from "./../../hooks/useAuth"
 import { useAudioPlayer } from "expo-audio";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
@@ -91,7 +91,7 @@ const NotificationsScreen: React.FC = () => {
   const { socket, isConnected } = useSocket();
   const router = useRouter();
 
-  // 🔥 CORRECTION : Charger les notifications à chaque focus
+  // Charger les notifications à chaque focus
   useFocusEffect(
     useCallback(() => {
       // console.log("🔄 Focus sur l'écran - Chargement des notifications");
@@ -155,66 +155,6 @@ const NotificationsScreen: React.FC = () => {
     };
   }, [socket, user?._id]);
 
-  //   useEffect(() => {
-  //
-  //
-  //     const unsubscribeLoaded = rewarded.addAdEventListener(
-  //       RewardedAdEventType.LOADED,
-  //       () => {
-  //         console.log("✅ Annonce chargée et prête.");
-  //         setLoaded(true);
-  //       }
-  //     );
-  //
-  //     const unsubscribeEarned = rewarded.addAdEventListener(
-  //       RewardedAdEventType.EARNED_REWARD,
-  //       (reward) => {
-  //         console.log("🎉 Récompense gagnée :", reward);
-  //
-  //         pendingRewardRef.current = reward;
-  //       }
-  //     );
-  //
-  //     // 🔥 NOUVEAU : Gérer la fermeture de l'annonce
-  //     const unsubscribeClosed = rewarded.addAdEventListener(
-  //       AdEventType.CLOSED,
-  //       () => {
-  //         console.log("👋 Annonce fermée. Rechargement...");
-  //         if (pendingRewardRef.current) {
-  //           const reward = pendingRewardRef.current;
-  //           Alert.alert(
-  //             "Félicitations 👋 !",
-  //             `Vous avez gagné ${reward.amount} ${reward.type}. Continuez à regarder les annonces pour gagner plus de coins`,
-  //             [{ text: "OK", onPress: () => console.log("Alerte fermée") }]
-  //           );
-  //           pendingRewardRef.current = null; // Réinitialise
-  //         }
-  //         setLoaded(false); // 1. Réinitialise l'état immédiatement
-  //         rewarded.load(); // 2. Lance le chargement de la prochaine annonce
-  //       }
-  //     );
-  //
-  //     // 🔥 NOUVEAU : Gérer les erreurs de chargement
-  //     const unsubscribeError = rewarded.addAdEventListener(
-  //       AdEventType.ERROR,
-  //       (error) => {
-  //         // console.error("❌ Erreur de chargement :", error);
-  //         setLoaded(false); // Assure que l'état est false en cas d'erreur
-  //       }
-  //     );
-  //
-  //     // Démarrer le premier chargement
-  //     rewarded.load();
-  //
-  //     // Nettoyage
-  //     return () => {
-  //       unsubscribeLoaded();
-  //       unsubscribeEarned();
-  //       unsubscribeClosed(); // 🔥 N'oubliez pas de nettoyer
-  //       unsubscribeError(); // 🔥 N'oubliez pas de nettoyer
-  //     };
-  //   }, []);
-
   useEffect(() => {
     const unsubscribeLoaded = rewarded.addAdEventListener(
       RewardedAdEventType.LOADED,
@@ -234,7 +174,7 @@ const NotificationsScreen: React.FC = () => {
         const rewardId = await addRewardToQueue("WATCH_REWARDED_AD");
 
         if (!rewardId) {
-          console.error("❌ Impossible d'ajouter à la file d'attente");
+          // console.error("❌ Impossible d'ajouter à la file d'attente");
           return;
         }
 
@@ -290,7 +230,7 @@ const NotificationsScreen: React.FC = () => {
     const unsubscribeError = rewarded.addAdEventListener(
       AdEventType.ERROR,
       (error) => {
-        console.error("❌ Erreur de chargement :", error);
+        // console.error("❌ Erreur de chargement :", error);
         setLoaded(false);
       }
     );
@@ -346,14 +286,6 @@ const NotificationsScreen: React.FC = () => {
   };
 
   const loadNotifications = async (): Promise<void> => {
-    //  if (!networkConnected) {
-    //      Alert.alert("📡 Hors ligne vous n'êtes pas connectés ","Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay")
-    //   return 
-    //  }
-    //  else{
-    //    Alert.alert("🌐 Connexion rétablie","Vous êtes connectés à l'internet donnée mobile est activé")
-       // On peut tout faire maintenant return everything we want with network connection 
-      
     try {
       // setLoading(true);
       const response = await signalAPI.getReceivedSignals();
@@ -389,7 +321,6 @@ const NotificationsScreen: React.FC = () => {
       setRefreshing(false);
     }
   };
-  //
 
   const handleAcceptSignal = async (signalId: string): Promise<void> => {
     try {
@@ -757,7 +688,22 @@ const NotificationsScreen: React.FC = () => {
       </TouchableOpacity>
     </View>
   );
-  //
+  
+ if (!networkConnected) {
+     return (
+        <View style={styles.centerContainer}>
+            <Ionicons
+           name="cloud-offline"
+           size={70}
+           color={"rgb(249, 244, 244)"}
+          />
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
+        </View>
+      );
+ }
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -889,12 +835,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#030914ff",
+  },
+  loadingTitle: {
+    marginTop: 16,
+    marginBottom:16,
+    fontSize: 20,
+    fontWeight:"bold",
+    color: "#f1efefff",
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#666",
+    // marginBottom:16,
+    fontSize: 15,
+    color: "rgb(186, 184, 184)",
   },
   header: {
     backgroundColor: "#203447ff",

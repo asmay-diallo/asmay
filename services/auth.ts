@@ -6,7 +6,8 @@ import { User } from '../types/index';
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
-// Version unifiée - utilisez ces fonctions partout
+// utilisez ces fonctions partout
+
 export const saveUserData = async (user: User, token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -46,7 +47,6 @@ export const removeUserData = async (): Promise<void> => {
       AsyncStorage.removeItem(USER_KEY),
       AsyncStorage.removeItem(TOKEN_KEY)
     ]);
-    // Supprimer aussi le header axios
     delete api.defaults.headers.common['Authorization'];
   } catch (error) {
     console.error('Error removing user data:', error);
@@ -54,7 +54,6 @@ export const removeUserData = async (): Promise<void> => {
   }
 };
 
-// Fonctions dépréciées - à supprimer progressivement
 export const storeToken = async (token: string): Promise<void> => {
   await AsyncStorage.setItem(TOKEN_KEY, token);
 };

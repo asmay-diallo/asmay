@@ -5,13 +5,12 @@ import {useEffect} from "react"
 import { StreamVideoProvider } from '../contexts/StreamVideoContext';
 import { store } from "../store/store";
 import { useAuth } from "../hooks/useAuth";
+import { AuthContext } from "../contexts/AuthContext";
 import ScreenLoading from "../components/ScreenLoading";
 import mobileAds from 'react-native-google-mobile-ads';
 
-
 function RootLayoutNav() {
-  const { isAuthenticated, loading } = useAuth();
-
+  const { isAuthenticated, loading,token } = useAuth();
 useEffect(() => {
     const initAdMob = async () => {
       await mobileAds().initialize();
@@ -26,7 +25,7 @@ useEffect(() => {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
+      {(isAuthenticated && token) ? (
         <Stack.Screen name="/(main)" />
       ) : (
         <Stack.Screen name="/(auth)" />
@@ -41,7 +40,7 @@ export default function RootLayout() {
       <AuthProvider>
        <StreamVideoProvider> 
           <RootLayoutNav />
-        </StreamVideoProvider>
+      </StreamVideoProvider>
       </AuthProvider>
     </Provider>
   );
