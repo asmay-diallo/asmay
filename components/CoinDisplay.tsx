@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   rateInfo: {
     fontSize: 14,
-    color: "#af2323ff",
+    color: "rgb(204, 179, 33)",
     marginTop: 8,
     fontWeight:"bold"
   },

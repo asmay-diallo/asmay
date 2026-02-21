@@ -32,7 +32,8 @@ export default function LoginScreen() {
     longitude: number;
   }>();
   const [error, setError] = useState("");
-  // const { login } = useAuth();
+ const [passwordLock,setPasswordLock] = useState(true)
+
   const router = useRouter();
 
   // Récupérer la localisation au chargement
@@ -57,7 +58,7 @@ export default function LoginScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        console.log("📍 Permission de localisation refusée");
+        console.log(" Permission de localisation refusée");
         return;
       }
 
@@ -71,50 +72,13 @@ export default function LoginScreen() {
       };
 
       setLocation(newLocation);
-      console.log("📍 Localisation récupérée pour login:", newLocation);
+      console.log(" Localisation récupérée pour login:", newLocation);
     } catch (error) {
-      console.log("⚠️ Erreur localisation login:", error);
+      console.log(" Erreur localisation login:", error);
     } finally {
       setLocationLoading(false);
     }
   };
-
-  //   const handleLogin = async () => {
-  //     if (!email || !password) {
-  //       // setError("Veuillez remplir tous les champs");
-  //       Alert.alert("Error", "Veuillez remplir tous les champs");
-  //       return;
-  //     }
-  //
-  //     try {
-  //       setIsLoading(true);
-  //       setError("");
-  //
-  //       console.log("🔐 Tentative de login avec:", {
-  //         email,
-  //         password: "***",
-  //         latitude: location?.latitude,
-  //         longitude: location?.longitude,
-  //       });
-  //
-  //       // Utiliser la fonction login du hook useAuth avec la localisation
-  //       const success = await login(email, password, location);
-  //
-  //       if (success) {
-  //         Alert.alert("Succès", "Connexion réussie !");
-  //         router.replace("/(main)/radar");
-  //       } else {
-  //         setError("Email ou mot de passe incorrect");
-  //         Alert.alert("Error", "Email or Password incorrect");
-  //       }
-  //     } catch (error: any) {
-  //       console.error("❌ Erreur login:", error);
-  //       Alert.alert("Error", "Server error ");
-  //       // setError(error.message || "Erreur de connexion");
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -148,14 +112,14 @@ export default function LoginScreen() {
         await saveUserData(response.data.user, response.data.token);
 
         // Alert.alert("Succès", "Connexion réussie !");
-        router.replace("/(main)/radar");
+        router.replace("/(main)/(asmay)");
       } else {
         throw new Error(response.data.message || "Échec de la connexion");
       }
     } catch (error: any) {
-      // console.error("❌ Erreur login:", error);
+      // console.error(" Erreur login:", error);
 
-      // 🔥 MEILLEUR MESSAGE D'ERREUR
+      //  MEILLEUR MESSAGE D'ERREUR
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -167,6 +131,12 @@ export default function LoginScreen() {
       setIsLoading(false);
     }
   };
+
+ const displayPassword = () =>{
+   const changedPasswordState = !passwordLock
+   setPasswordLock(changedPasswordState)
+ }
+
 if (!networkConnected) {
     return (
         <View style={styles.centerContainer}>
@@ -246,8 +216,11 @@ if (!networkConnected) {
           setPassword(text);
           setError("");
         }}
-        secureTextEntry
+        secureTextEntry={passwordLock}
       />
+        <TouchableOpacity style={styles.passwordLock} onPress={displayPassword}>
+        <Ionicons name={passwordLock ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+      </TouchableOpacity>
 
       <Button
         title={isLoading ? "Connexion..." : "Se connecter"}
@@ -312,6 +285,11 @@ const styles = StyleSheet.create({
     color :"red",
     flex: 1,
   },
+  passwordLock:{
+    position:"fixed",
+    bottom:58,
+    right:-268
+  },
  centerContainer: {
     flex: 1,
     justifyContent: "center",
@@ -367,5 +345,6 @@ const styles = StyleSheet.create({
     color: "#007bff",
     textAlign: "center",
     marginTop: 20,
+    fontWeight:"bold"
   },
 });

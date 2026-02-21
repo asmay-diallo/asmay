@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
-const API_BASE_URL = 'http://10.88.166.123:5000/api'
+const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
 // const API_BASE_URL = 'https://asmay-backend.onrender.com/api'
 
 export const api = axios.create({

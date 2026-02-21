@@ -41,7 +41,7 @@ export const useSocket = () => {
   };
   const connectSocket = useCallback(() => {
     if (!isAuthenticated || !user || !token) {
-      console.log('🔐 Non authentifié, annulation connexion Socket');
+      console.log(' Non authentifié, annulation connexion Socket');
       return;
     }
 
@@ -55,10 +55,10 @@ export const useSocket = () => {
       setSocket(null);
     }
 
-const socketUrl = 'http://10.88.166.123:5000';
+const socketUrl =process.env.EXPO_PUBLIC_API_URL;
 // process.env.EXPO_PUBLIC_API_URL ||
     
-    console.log('🌐 Connexion à:', socketUrl);
+    console.log('Connexion à:', socketUrl);
 
     // Configuration améliorée 
     const newSocket: Socket = io(socketUrl, {
@@ -147,13 +147,11 @@ const socketUrl = 'http://10.88.166.123:5000';
       }
     });
 
-    // ✅ Écouter l'acceptation des signaux
+    // Écouter l'acceptation des signaux
     newSocket.on('signal_accepted', (data) => {
       console.log('✅ Votre signal a été accepté!', data);
       playCorrectSound()
  
- 
-      
       Alert.alert(
       '🎉 Match 🎉', 
       `${data.acceptedBy?.username } a accepté votre signal`,
@@ -161,10 +159,10 @@ const socketUrl = 'http://10.88.166.123:5000';
         {
           text: "💬 Chat",
           onPress: () => {
-            console.log('🧭 Navigation vers chat:', data.chatId);
+            console.log(' Navigation vers chat:', data.chatId);
             // Navigation forcée
             router.navigate({
-              pathname: "/(main)/message",
+              pathname: "/(main)/(asmay)/message",
               // params: { id: data.chatId }
             });
           }
@@ -179,7 +177,7 @@ const socketUrl = 'http://10.88.166.123:5000';
 
 
     });
-// ✅ Écouter le refus des dignaux 
+//  Écouter le refus des dignaux 
     newSocket.on('signal_declined',(data)=> {
         console.log("DONNE DATA est :",data)
         playCorrectSound()

@@ -1,7 +1,9 @@
 import { Stack } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
+
 export default function AuthLayout() {
+    
   return (
     <Stack
       screenOptions={{
@@ -17,7 +19,7 @@ export default function AuthLayout() {
         ),
       }}
     >
-      <Stack.Screen name="login" options={{ title: "Connexion" }} />
+      <Stack.Screen name="index" options={{ title: "Connexion" }} />
       <Stack.Screen name="register" options={{ title: "Inscription" }} />
     </Stack>
   );

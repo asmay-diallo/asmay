@@ -57,13 +57,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Mettez à jour avec les données fraîches du serveur
             const freshUserData = response.data.data;
             setUser(freshUserData);
-            await storeUserData(freshUserData); // Mettez à jour le stockage local
+            await storeUserData(freshUserData); 
           }
         } catch (error) {
-          // console.error("Token validation failed:", error);
-          // Le token est invalide, déconnectez vraiment
           await removeToken();
-          await removeUserData(); // Ici, supprimez tout
+          await removeUserData(); 
           setUserToken(null);
           setUser(null);
         }
@@ -118,7 +116,6 @@ const register = async (userData: {
     if (response.data.success && response.data.data) {
       const { token, user: newUser } = response.data.data;
 
-      //  UTILISEZ saveUserData
       await saveUserData(newUser, token);
 
       setUserToken(token);
@@ -140,11 +137,9 @@ const register = async (userData: {
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      await removeToken(); // Supprimez seulement le token
-      // NE supprimez PAS les données utilisateur : await removeUserData();
-
+      await removeToken(); 
       setUserToken(null);
-      setUser(null); // Mais réinitialisez l'état
+      setUser(null); 
     } catch (error) {
       console.error("Logout error:", error);
       throw error;

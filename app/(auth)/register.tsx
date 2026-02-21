@@ -52,7 +52,9 @@ export default function RegisterScreen() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [networkConnected,setNetworkConnected] = useState<boolean>(false)
-  // const { login } = useAuth();
+  const [passwordLock1,setPasswordLock1] = useState(true)
+  const [passwordLock2,setPasswordLock2] = useState(true)
+
   const router = useRouter();
 
   // Récupérer la localisation au chargement du composant
@@ -337,7 +339,7 @@ const handleRegister = async () => {
           await new Promise(resolve => setTimeout(resolve, 100));
           
           // Redirigez vers la page d'accueil 
-          router.replace("/(main)/radar"); 
+          router.navigate("/(main)/(asmay)"); 
          
           Alert.alert(
             `Bienvenue ${user.username} sur ASMAY ✨`, 
@@ -378,6 +380,14 @@ const handleRegister = async () => {
   const updateFormData = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+  const displayPassword1 = () =>{
+   const changedPasswordState = !passwordLock1
+   setPasswordLock1(changedPasswordState)
+  }
+  const displayPassword2 = () =>{
+   const changedPasswordState = !passwordLock2
+   setPasswordLock2(changedPasswordState)
+  }
 
 if (!networkConnected) {
     return (
@@ -449,14 +459,20 @@ if (!networkConnected) {
         placeholder="Mot de passe*"
         value={formData.password}
         onChangeText={(text) => updateFormData("password", text)}
-        secureTextEntry
+        secureTextEntry={passwordLock1}
       />
+         <TouchableOpacity style={styles.passwordLock1} onPress={displayPassword1}>
+              <Ionicons name={passwordLock1 ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+            </TouchableOpacity>
       <Input
         placeholder="Confirmer mot de passe*"
         value={formData.confirmPassword}
         onChangeText={(text) => updateFormData("confirmPassword", text)}
-        secureTextEntry
+        secureTextEntry={passwordLock2}
       />
+        <TouchableOpacity style={styles.passwordLock2} onPress={displayPassword2}>
+              <Ionicons name={passwordLock2 ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+            </TouchableOpacity>
       <Input
         placeholder="Centres d'intérest ( separés par des virgules )"
         value={formData.interests}
@@ -529,6 +545,19 @@ const styles = StyleSheet.create({
     color: "red",
     flex: 1,
   },
+  passwordLock1:{
+      position:"fixed",
+    bottom:58,
+    right:-268,
+    marginBottom:-26,
+    // marginTop:0
+  },
+  passwordLock2:{ 
+     position:"fixed",
+    bottom:58,
+    right:-268,
+    marginBottom:-26,
+  },
   centerContainer: {
     flex: 1,
     height:"100%",
@@ -579,5 +608,7 @@ const styles = StyleSheet.create({
     color: "#007bff",
     textAlign: "center",
     marginTop: 20,
+    fontWeight:"bold",
+    fontFamily:"sans-serif"
   },
 });

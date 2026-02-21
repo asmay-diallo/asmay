@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "rgb(2, 2, 3)",
         "foregroundImage": "./assets/images/asmay-icon.png",
         "backgroundImage": "./assets/images/asmay-backgroundImage.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -24,7 +24,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/asmay-icon.png"
     },
     
     "plugins": [

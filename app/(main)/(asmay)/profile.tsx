@@ -15,14 +15,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import NetInfo  from "@react-native-community/netinfo";
 import CoinDisplay from '@/components/CoinDisplay';
-import { getUserData } from "../../services/auth";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
-import { User } from "../../types";
+import { getUserData } from "../../../services/auth";
+import Button from "../../../components/Button";
+import Input from "../../../components/Input";
+import { User } from "../../../types";
 import { useRouter } from "expo-router";
-import { uploadAPI } from "../../services/upload";
-import {useAuth } from './../../hooks/useAuth'
-import { userAPI, UserProfile } from "../../services/api"; 
+import { uploadAPI } from "../../../services/upload";
+import {useAuth } from '../../../hooks/useAuth'
+import { userAPI, UserProfile } from "../../../services/api"; 
 
 interface PrivacySettings {
   isVisible: boolean;
@@ -285,7 +285,8 @@ export default function ProfileScreen() {
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
-        router.navigate("/login");
+        // router.navigate("/(auth)");
+        await logout()
       }
 
       Alert.alert("Erreur", errorMessage);
@@ -321,7 +322,7 @@ export default function ProfileScreen() {
   };
 
 
- if (!networkConnected) {
+ if (networkConnected) {
      return (
         <View style={styles.centerContainer}>
             <Ionicons
@@ -596,8 +597,10 @@ const styles = StyleSheet.create({
     padding: 20,
     color: "white",
     borderRadius: 10,
+    borderColor:"#bcda48",
+    borderWidth:1,
     marginBottom: 20,
-    shadowColor: "#04a70c",
+    // shadowColor: "#04a70c",
     shadowOffset: { width: 2, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -717,12 +720,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#666",
+    color: "#ccc9c9",
     marginBottom: 5,
   },
   value: {
     fontSize: 16,
-    color: "#333",
+    color: "#a48686",
   },
   switchField: {
     flexDirection: "row",
@@ -731,9 +734,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   switchLabel: {
-    fontSize: 16,
+    fontSize: 15,
     flex: 1,
     marginRight: 10,
+    color:"#d8d6d6",
+    fontWeight:"bold"
   },
   actions: {
     marginTop: 20,

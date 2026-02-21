@@ -12,6 +12,7 @@ import {
   Alert,
   Image,
   Platform,
+  ImageBackground,
 } from "react-native";
 import {
   BannerAd,
@@ -21,10 +22,10 @@ import {
 } from "react-native-google-mobile-ads";
 import  NetInfo from "@react-native-community/netinfo";
 import { useRouter } from "expo-router";
-import { chatAPI } from "../../services/api";
-import {useAuth} from "./../../hooks/useAuth"
-import { useSocket } from "../../hooks/useSocket";
-import { Chat } from "../../types";
+import { chatAPI } from "../../../services/api";
+import {useAuth} from "../../../hooks/useAuth"
+import { useSocket } from "../../../hooks/useSocket";
+import { Chat } from "../../../types";
 import Input from "@/components/Input";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -206,7 +207,7 @@ export default function MessagesScreen() {
     return (
       <TouchableOpacity
         style={styles.chatItem}
-        onPress={() => router.push(`/(main)/chat/${item._id}`)}
+        onPress={() => router.push(`/(main)/(asmay)/chat/${item._id}`)}
       >
         {otherUser.profilePicture ? (
           <Image
@@ -266,8 +267,11 @@ if (!networkConnected) {
   
 
   return (
-    <View style={styles.container}>
-      {/* <View style={styles.header}>
+    <ImageBackground
+     source={require("../../../assets/images/asmay-home.png")}
+      resizeMode="cover"
+    style={styles.container}>
+      {/* <ImageBackground style={styles.header}>
         {/* <Text style={styles.title}>Chats</Text> */}
       {/* <View
           style={[
@@ -309,7 +313,7 @@ if (!networkConnected) {
             <Ionicons 
             name="clipboard-outline"
              size={80}
-             color={"#9e9b9bff"}
+             color={"rgb(252, 250, 250)"}
               style={styles.iconEmpty}
              />
           </View>
@@ -320,7 +324,7 @@ if (!networkConnected) {
         unitId={adUnitId}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
       />
-    </View>
+    </ImageBackground>
   );
 }
 

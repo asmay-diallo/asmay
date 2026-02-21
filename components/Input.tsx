@@ -40,6 +40,7 @@ const Input: React.FC<InputProps> = ({
         returnKeyType="done"
         textContentType="none"
         {...props}
+        
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>

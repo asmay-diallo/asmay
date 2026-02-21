@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Button,
+  ImageBackground,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -23,7 +24,7 @@ import {
   TestIds,
   AdEventType,
 } from "react-native-google-mobile-ads";
-import {useAuth} from "./../../hooks/useAuth"
+import {useAuth} from "../../../hooks/useAuth"
 import { useAudioPlayer } from "expo-audio";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
@@ -98,12 +99,12 @@ const NotificationsScreen: React.FC = () => {
       loadNotifications();
     }, [])
   );
-  const player = useAudioPlayer(require("../../assets/sound/clapSound.mp3"));
+  const player = useAudioPlayer(require("../../../assets/sound/clapSound.mp3"));
   const playSignalSound = () => {
     player.seekTo(0); // Remet le son au début
     player.play(); // Joue le son
   };
-  const playerErrorSound = useAudioPlayer(require("../../assets/sound/errorSound.mp3"));
+  const playerErrorSound = useAudioPlayer(require("../../../assets/sound/errorSound.mp3"));
   const playErrorSound = () => {
     playerErrorSound.seekTo(0); // Remet le son au début
     playerErrorSound.play(); // Joue le son
@@ -472,14 +473,14 @@ const NotificationsScreen: React.FC = () => {
     if (chatId) {
       console.log("💬 Navigation vers chat:", chatId);
       router.navigate({
-        pathname: "/(main)/message",
+        pathname: "/(main)/(asmay)/message",
         // params: { id: chatId },
       });
     }
   };
 
   const navigateToRadar = (): void => {
-    router.navigate("/(main)/radar" as any);
+    router.navigate("/(main)/(asmay)" as any);
   };
  
   const showRewardedAd = () => {
@@ -680,7 +681,7 @@ const NotificationsScreen: React.FC = () => {
       <Ionicons 
                   name="clipboard-outline"
                    size={80}
-                   color={"#9e9b9bff"}
+                   color={"rgb(245, 245, 245)"}
                     style={styles.iconEmpty}
                    />
       <TouchableOpacity style={styles.exploreButton} onPress={navigateToRadar}>
@@ -714,7 +715,10 @@ const NotificationsScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <ImageBackground
+     source={require("../../../assets/images/asmay-home.png")}
+      resizeMode="cover"
+    style={styles.container}>
       {/* {!networkConnected && (
         <View style={styles.offlineIndicator}>
           <Text style={styles.offlineText}>
@@ -766,7 +770,7 @@ const NotificationsScreen: React.FC = () => {
         }
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-        extraData={notifications} // 🔥 CORRECTION : Forcer le re-render quand notifications change
+        extraData={notifications} 
       />
    
       <Button
@@ -788,7 +792,7 @@ const NotificationsScreen: React.FC = () => {
         disabled={!loaded} // Continue à désactiver visuellement le bouton
         color={loaded ? "#007AFF" : "#CCCCCC"} // Couleur visuelle pour l'état
       />
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -850,7 +854,7 @@ const styles = StyleSheet.create({
     color: "rgb(186, 184, 184)",
   },
   header: {
-    backgroundColor: "#203447ff",
+    // backgroundColor: "#203447ff",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#39434eff",
@@ -1053,7 +1057,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: "#c9c4c4ff",
+    color: "rgb(239, 237, 237)",
     textAlign: "center",
     lineHeight: 22,
   },

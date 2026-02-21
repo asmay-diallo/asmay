@@ -25,11 +25,12 @@ import {
   setAudioModeAsync,
   RecordingPresets,
 } from "expo-audio";
-import { chatAPI } from "../../../services/api";
-import { useAuth } from "./../../../hooks/useAuth";
-import { useSocket } from "../../../hooks/useSocket";
-import { useStreamVideo } from "@/contexts/StreamVideoContext";
-import { Message } from "../../../types";
+// import { chatAPI } from "../../services/api";
+import { chatAPI } from "@/services/api";
+import { useAuth } from "../../../../hooks/useAuth";
+import { useSocket } from "../../../../hooks/useSocket";
+// import { useStreamVideo } from "@/contexts/StreamVideoContext";
+import { Message } from "../../../../types";
 import Input from "@/components/Input";
 
 export default function ChatScreen() {
@@ -38,7 +39,7 @@ export default function ChatScreen() {
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const { streamClient, createCall } = useStreamVideo();
+  // const { streamClient, createCall } = useStreamVideo();
   const { user } = useAuth();
   const router = useRouter()
   const { socket, isConnected } = useSocket();
@@ -320,22 +321,20 @@ export default function ChatScreen() {
   const audioPlayer = useAudioPlayer();
   const playAudioMessage = async (audioUrl: string) => {
     if (audioUrl && audioUrl.startsWith("/")) {
-      audioUrl = `http://10.88.166.123:5000${audioUrl}`;
+      audioUrl = `https://asmay-3666dae6847a.herokuapp.com${audioUrl}`;
     }
     try {
       await audioPlayer.replace({ uri: audioUrl });
-      // Joue le son
+      // Jouer le son
       audioPlayer.play();
-      // Pas besoin de setOnPlaybackStatusUpdate avec cette approche.
-      // La promesse de playAsync() se résout quand la lecture est terminée.
-      console.log("✅ Lecture audio terminée");
+      console.log(" Lecture audio terminée");
     } catch (error) {
-      console.error("❌ Erreur lecture audio:", error);
+      console.error(" Erreur lecture audio:", error);
     }
   };
 
   const player = useAudioPlayer(
-    require("../../../assets/sound/sendMessage.mp3")
+    require("../../../../assets/sound/sendMessage.mp3")
   );
   const playMessageSound = () => {
     player.seekTo(0);
@@ -345,38 +344,38 @@ export default function ChatScreen() {
   
   //=======================FONCTION POUR  LANCER L'APPEL VIDEO ========================
 
-  const startVideoCall = async () => {
-    try {
-      // Utiliser l'ID du chat comme ID d'appel pour le retrouver facilement
-      console.log("Appel Vidéo !")
-      const call = await createCall('default', `chat_${chatId}`);
-    
-      // Rejoindre l'appel (crée la salle)
-      await call.join({ create: true });
-      
-      // Naviguer vers l'écran d'appel
-      router.navigate({
-        pathname: '/(main)/chat/videoCall',
-        params: { 
-          callId: call.id,
-          chatId: chatId 
-        }
-      });
-      
-      // Optionnel : Envoyer une notification à l'autre participant via Socket.io
-      if (socket && isConnected) {
-        socket.emit('video_call_initiated', {
-          chatId,
-          callId: call.id,
-          callerId: user?._id,
-          callerName: user?.username
-        });
-      }
-    } catch (error) {
-      console.error('❌ Erreur démarrage appel vidéo:', error);
-      Alert.alert('Erreur', 'Impossible de démarrer l\'appel vidéo');
-    }
-  };
+  // const startVideoCall = async () => {
+  //   try {
+  //     // Utiliser l'ID du chat comme ID d'appel pour le retrouver facilement
+  //     console.log("Appel Vidéo !")
+  //     const call = await createCall('default', `chat_${chatId}`);
+  //   
+  //     // Rejoindre l'appel (crée la salle)
+  //     await call.join({ create: true });
+  //     
+  //     // Naviguer vers l'écran d'appel
+  //     router.navigate({
+  //       pathname: '/(main)/(asmay)/chat/videoCall',
+  //       params: { 
+  //         callId: call.id,
+  //         chatId: chatId 
+  //       }
+  //     });
+  //     
+  //     // Optionnel : Envoyer une notification à l'autre participant via Socket.io
+  //     if (socket && isConnected) {
+  //       socket.emit('video_call_initiated', {
+  //         chatId,
+  //         callId: call.id,
+  //         callerId: user?._id,
+  //         callerName: user?.username
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ Erreur démarrage appel vidéo:', error);
+  //     Alert.alert('Erreur', 'Impossible de démarrer l\'appel vidéo');
+  //   }
+  // };
 
   // ==================== FONCTIONS ORIGINALES DU CHAT
 
@@ -449,7 +448,7 @@ export default function ChatScreen() {
     // Réception d'un nouveau message vocal
     socket.on("new_voice_message", (messageData: Message) => {
       playMessageSound();
-      console.log("🔊 DEBUG - Message vocal reçu:", {
+      console.log(" DEBUG - Message vocal reçu:", {
         messageId: messageData._id,
         audioUrl: messageData.audioUrl,
         type: messageData.type,
@@ -758,12 +757,12 @@ export default function ChatScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
       <ImageBackground
-        source={require("../../../assets/images/asmay-icon.png")}
+        source={require("../../../../assets/images/asmay-icon.png")}
         resizeMode="cover"
         style={styles.container}
       >
            <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.navigate("/(main)/message")}>
+          <TouchableOpacity onPress={() => router.navigate("/(main)/(asmay)/message")}>
               <Ionicons      
                               name={"arrow-back"} 
                               size={24} 

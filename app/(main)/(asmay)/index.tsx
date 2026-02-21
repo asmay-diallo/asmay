@@ -17,7 +17,7 @@ import {
   Button,
   ImageBackground,
   Image,
-  Modal
+  FlatList
 } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import {
@@ -31,12 +31,13 @@ import { useAudioPlayer } from "expo-audio";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Location from "expo-location";
 import  NetInfo  from "@react-native-community/netinfo";
-import { radarAPI, signalAPI } from "../../services/api";
-import { getUserData } from "../../services/auth";
-import ARRadarView from "../../components/ARRadarView";
-import { useAuth } from "./../../hooks/useAuth";
-import { useSocket } from "../../hooks/useSocket";
+import { radarAPI, signalAPI } from "../../../services/api";
+import { getUserData } from "../../../services/auth";
+import ARRadarView from "../../../components/ARRadarView";
+import { useAuth } from "./../../../hooks/useAuth";
+import { useSocket } from "../../../hooks/useSocket";
 import { useRouter } from "expo-router";
+import { translations } from "@stream-io/video-react-native-sdk";
 
 interface NearbyUser {
   _id: string;
@@ -69,7 +70,6 @@ interface PrivacySettings {
   showCommonInterestsOnly: boolean;
 }
 
-// ✅ OPTIONS DE DISTANCE DISPONIBLES
 const DISTANCE_OPTIONS = [
   { value: 1000, label: "1km", emoji: "🚶" },
   { value: 2000, label: "2km", emoji: "🚴" },
@@ -115,14 +115,18 @@ const RadarScreen: React.FC = () => {
   const [networkConnected,setNetworkConnected] = useState<boolean>(false)
   const [hiddenUsers,setHiddenUsers] = useState<NearbyUser[]>([])
   const [isDisplayUsers , setIsDisplayUsers] = useState(false)
+  const [showUserProfile, setShowUserProfile] = useState<NearbyUser|null>(null)
+  const [isShowUserProfile,setIsShowUserProfile] = useState(false)
   const bannerRef = useRef<BannerAd>(null);
   
   const { user } = useAuth();
   const router = useRouter();
 
-
-  const player = useAudioPlayer(require("../../assets/sound/sendSignal.mp3"));
+// 
+  const player = useAudioPlayer(require("../../../assets/sound/sendSignal.mp3"));
    useEffect(() => {
+  loadHiddenUsers()
+
       const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
         console.log('Etat de connexion : ',state);
         
@@ -149,7 +153,7 @@ const RadarScreen: React.FC = () => {
     } else if (permission?.granted) {
       startLocationTracking();
       if (isConnected) {
-        console.log("✅ Prêt à recevoir des signaux en temps réel!");
+        console.log(" Prêt à recevoir des signaux en temps réel!");
       }
     }
   }, [permission, isConnected]);
@@ -276,7 +280,7 @@ const RadarScreen: React.FC = () => {
     player.play(); // Joue le son
   };
   
-    const playerErrorSound = useAudioPlayer(require("../../assets/sound/errorSound.mp3"));
+    const playerErrorSound = useAudioPlayer(require("../../../assets/sound/errorSound.mp3"));
     const playErrorSound = () => {
       playerErrorSound.seekTo(0); // Remet le son au début
       playerErrorSound.play(); // Joue le son
@@ -445,18 +449,17 @@ const RadarScreen: React.FC = () => {
     }
   };
 
-  const navigateToProfile = () => {
+const navigateToProfile = () => {
    if (!networkConnected) {  
             Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
             return
           }
     router.navigate({
-      pathname: "/(main)/profile",
+      pathname: "/(main)/(asmay)/profile",
     });
     showInterstitialAd();
   };
-
-  const toggleVisibility = async () => {
+const toggleVisibility = async () => {
        if (!networkConnected) {
             Alert.alert(" 📡 Hors ligne vous n'êtes pas connectés", "Veuillez activer donnée mobile ou vous connecter à Wi-Fi pour bien utiliser Asmay" )
             return
@@ -468,19 +471,168 @@ const RadarScreen: React.FC = () => {
     }
   };
 const displayHiddenUser =()=>{ 
-  const hiddenUser = nearbyUsers.filter((user) => user.privacySettings.showOnRadar===false)
-      setHiddenUsers(hiddenUser)
+  
        const displayUsers = !isDisplayUsers
        setIsDisplayUsers(displayUsers)
-console.log('Hidden users are :',isDisplayUsers)
+  console.log('Hidden users are :',hiddenUsers)
  
 }
 const cancelHiddenUsers = () =>{
   const cancelHidden = !isDisplayUsers
   setIsDisplayUsers(cancelHidden)
 }
+const displayHiddenUserProfile = (userId:string) =>{
+  const userProfile = hiddenUsers.find((user)=>user._id===userId)
 
- if (networkConnected) {
+  if(userProfile)
+     setShowUserProfile(userProfile) 
+    setIsShowUserProfile(true)
+}
+const loadHiddenUsers = () => {
+ // Vrais Users ------- logique plus tard
+
+ const hiddeUser = nearbyUsers.filter((user)=>user.privacySettings.showOnRadar===false)
+    // // Test Users -------
+    // const mockHiddenUsers: NearbyUser[] = [
+    //   {
+    //     _id: "2",
+    //     username: "Adama",
+    //     interests:{
+    //       common:["Lecture"],
+    //       count:5
+    //     } ,
+    //     privacySettings:{
+    //       showOnRadar:true,
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true
+    //     },
+    //     distance: 25,
+    //     bearing: 120,
+    //     toSessionId: "session_2",
+    //   },
+    //   {
+    //     _id: "3",
+    //     username: "Mariam",
+    //     interests: {
+    //       common:["Voyage"],
+    //       count:1
+    //     },
+    //     privacySettings:{
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true,
+    //       showOnRadar:true
+    //     },
+    //     distance: 80,
+    //     bearing: 270,
+    //     toSessionId: "session_3",
+    //   },
+    //   {
+    //     _id: "4",
+    //     username: "James",
+    //     interests: {
+    //       common:["Lecture"],
+    //       count:1
+    //     },
+    //     privacySettings:{
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true,
+    //       showOnRadar:true
+    //     },
+    //     distance: 80,
+    //     bearing: 270,
+    //     toSessionId: "session_3",
+    //   },
+    //   {
+    //     _id: "8",
+    //     username: "Abdoulaye",
+    //     interests: {
+    //       common:["Technologie"],
+    //       count:1
+    //     },
+    //     privacySettings:{
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true,
+    //       showOnRadar:true
+    //     },
+    //     distance: 80,
+    //     bearing: 270,
+    //     toSessionId: "session_3",
+    //   },
+    //   {
+    //     _id: "0",
+    //     username: "Awa",
+    //     interests: {
+    //       common:["Tiktok"],
+    //       count:1
+    //     },
+    //     privacySettings:{
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true,
+    //       showOnRadar:true
+    //     },
+    //     distance: 80,
+    //     bearing: 270,
+    //     toSessionId: "session_3",
+    //   },
+    //   {
+    //     _id: "10",
+    //     username: "Sitan",
+    //     interests: {
+    //       common:["Technologie"],
+    //       count:1
+    //     },
+    //     privacySettings:{
+    //       isVisible:true,
+    //       showCommonInterestsOnly:true,
+    //       showOnRadar:true
+    //     },
+    //     distance: 80,
+    //     bearing: 270,
+    //     toSessionId: "session_3",
+    //   },
+    // ];
+    
+    setHiddenUsers(hiddeUser);
+    console.log( "les users cachés ",hiddenUsers );
+  };
+const renderItemHiddenUser = ({ item }: { item: NearbyUser }) =>{
+   
+    return (
+       <TouchableOpacity style={styles.itemHiddenUser} onPress={()=>displayHiddenUserProfile(item._id)}>
+              <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {item.username?.charAt(0)?.toUpperCase() || "?"}
+                    </Text>
+              </View>
+              <View style={styles.userInfo}>
+                            <Text style={styles.username}>{item.username}</Text>
+                              {item.interests.common?.slice(0, 2).map((interest, idx) => (
+                                <Text key={idx} style={styles.interestTag}>
+                                 Interêt : {interest}
+                                </Text>
+                              ))}
+                       </View>
+              <View style={styles.icons}>
+                         <Ionicons name="key" color="#ffa963" size={33} />
+                       </View>
+
+        </TouchableOpacity>
+    )
+  }
+const renderEmptyHiddenUser=()=>{
+  return (
+     <View  style={styles.hiddenUsersEmptyContainer}>
+       <Text style={styles.hiddenUsersEmptyTitle}>
+          Aucun utilisateur proche se cache autour de vous pour l'instant
+        </Text>
+       <Text style={styles.hiddenUsersEmptyBody}>
+          Les utilisateurs invisibles qui ont fermés leurs radar ASMAY apparaîtront ici avec des informations insuffisantes pour leurs connaitre ou leurs contacter.
+        </Text>
+       </View>
+  )
+  }
+
+ if (!networkConnected) {
      return (
         <View style={styles.centerContainer}>
             <Ionicons
@@ -527,15 +679,16 @@ const cancelHiddenUsers = () =>{
 
   return (
     <ImageBackground
-      source={require("../../assets/images/asmay-backgroundImage.png")}
+      source={require("../../../assets/images/asmay-home.png")}
       resizeMode="cover"
       style={styles.container}
+      
     >
  
       {/* <View style={styles.container}> */}
       {isLoading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color="#fff"   />
         </View>
       )}
 
@@ -558,12 +711,13 @@ const cancelHiddenUsers = () =>{
           {isConnected ? "🔴 En ligne" : "⚫ Hors ligne"}
         </Text>
       </View>
+      {/* // Afficher les utilisateurs cachés */}
       { isDisplayUsers &&
       <View style={styles.hiddenUsersContainer}>
           <View style={styles.hiddenUsersHeader}>
             <Ionicons      
-                name={"person-outline"} 
-                size={34} 
+                name={"people-circle"} 
+                size={54} 
                color={"#d4d1d1ff"} 
               
             />
@@ -572,44 +726,77 @@ const cancelHiddenUsers = () =>{
           
       </Text>
               <Text style={styles.hiddenTitle}>
-          Utilisateur{hiddenUsers.length < 0 ? "s" :"" } caché{hiddenUsers.length < 0 ? "s" :"" }
+          Utilisateur{hiddenUsers.length >  1 ? "s" :"" } caché{hiddenUsers.length > 1 ? "s" :"" }
       </Text>
               <TouchableOpacity onPress={cancelHiddenUsers}>
              <Ionicons      
                 name={"close-circle-outline"} 
                 size={34} 
                color={"#d4d1d1ff"} 
+              on={()=>{
+              console.log(" Trial trial !!!");
               
+              }}
             />
             </TouchableOpacity> 
-      </View>
+          </View>
           <View style={styles.hiddenUsersBody} >
-             <Text>
-          Bonjours les amies 
-      </Text>
+             <FlatList
+                    data={hiddenUsers}
+                    renderItem={renderItemHiddenUser}
+                    keyExtractor={(item) => item._id}
+                    // contentContainerStyle={}
+                    ListEmptyComponent={renderEmptyHiddenUser}
+                    showsVerticalScrollIndicator={true}
+                    automaticallyAdjustContentInsets={true}
+                    canCancelContentTouches={true}
+
+                    extraData={hiddenUsers} 
+                  />
       </View>
      
       </View>
-   
       }
-        
-      {/* Contrôles */}
-      <View style={styles.controls}>
-      
-        <TouchableOpacity style={styles.controlButton}  onPress={displayHiddenUser}>
-             <Ionicons      
-                name={"menu"} 
-                size={34} 
+      {/* // Afficher le profil de l'utilisateur caché qui est cliqué */}
+      {  isShowUserProfile && showUserProfile ?
+         (<TouchableOpacity style={styles.userProfile} onPress={()=>setIsShowUserProfile(false)}>
+           <Ionicons      
+                name={"person-outline"} 
+                size={66} 
                color={"#d4d1d1ff"} 
               
             />
+          <Text style={styles.userProfileName}>{showUserProfile.username}</Text>
+          <Text style={styles.userProfileText}>Cet utilisateur {showUserProfile.username.toLocaleUpperCase()} est invisible sur le Radar d'Asmay. Il a fermé son Radar pour que vous ne pouvez plus lui envoyer des signaux, des textos, des messages vocaux et lui faire connaître</Text>
+           <Ionicons      
+                name={"key"} 
+                size={45} 
+               color={"rgb(210, 202, 177)"} 
+              
+            />
+        </TouchableOpacity>):null
+        }
+      {/* Contrôles */}
+      <View style={styles.controls}>
+{/*         
+        <TouchableOpacity style={styles.controlButton}  onPress={()=>router.replace("/(main)/(yamsa)")}>
+              <Ionicons      
+                name={"repeat"} 
+                size={34} 
+               color={"rgb(253, 251, 251)"} 
+              
+            />
         </TouchableOpacity>
+      
+        <TouchableOpacity style={styles.controlButton}  onPress={displayHiddenUser}>
+             <Text style={styles.hiddenLengthButton}>{hiddenUsers.length}</Text>
+        </TouchableOpacity> */}
       
         <TouchableOpacity style={styles.controlButton}  onPress={navigateToProfile}>
              <Ionicons      
                 name={"person"} 
                 size={34} 
-               color={"#d4d1d1ff"} 
+               color={"rgb(253, 251, 251)"} 
               
             />
         </TouchableOpacity>
@@ -678,7 +865,7 @@ hiddenUsersContainer:{
     alignItems: "center",
     backgroundColor: "#150f0f",
     borderRadius:10,
-    zIndex:1000
+    zIndex:1000,
 },
 hiddenUsersHeader:{
   height:"15%",
@@ -700,17 +887,97 @@ hiddenLength:{
   position:"absolute",
   height:20,
   width:30,
-  left:20,
-  bottom:40,
+  left:35,
+  bottom:45,
   textAlign:"center",
-  backgroundColor:"#f3e70c",
+  backgroundColor:"#fbef08",
   borderRadius:10,
-  color:"#110f0f",
+  color:"#0f0303",
   fontWeight:"bold",
   fontSize:16
 },
+hiddenLengthButton:{
+color:"#fff",
+fontSize:25,
+fontWeight:"bold"
+
+},
 hiddenUsersBody:{
+  // backgroundColor:"#5e5858",
+  width:"90%",
+  height:"80%",
+  borderRadius:10,
+  padding:10,
+  marginTop:10
  
+},
+itemHiddenUser:{
+flexDirection:"row",
+marginBottom: 15,
+backgroundColor:"#434344",
+padding:6,
+borderRadius:5
+},
+avatar:{
+  width:"22%",
+  height:50,
+  borderRadius:30,
+  backgroundColor:"#5220cf",
+  borderColor:"#d4c707",
+  borderWidth:2,
+  textAlign:"center",
+  alignItems:"center",
+  justifyContent:"center",
+},
+  avatarText:{
+    color:"#fff",
+  fontSize:25,
+  fontWeight:"bold"
+
+  },
+  userInfo:{
+    width:"60%",
+    paddingLeft:6
+  },
+  username:{
+    color:"#fff",
+    marginBottom:5,
+    fontSize:18,
+    fontWeight:"bold",
+  },
+  interestTag:{
+    color:"#f0ce0f",
+    fontSize:12,
+    
+  },
+  icons:{
+  width:"18%",
+  justifyContent:"center"
+  },
+userProfile:{
+height:"60%",
+width:"100%",
+backgroundColor:"#2f424e",
+position:"absolute",
+justifyContent:"center",
+alignItems:"center",
+zIndex:3000,
+borderRadius:20
+
+},
+userProfileName:{
+  color:"#fff",
+  fontSize:30,
+  fontWeight:"bold",
+},
+userProfileText:{
+  height:"40%",
+  width:"60%",
+  color:"#ecd3d3",
+  textAlign:"center",
+  fontSize:17,
+  fontWeight:"bold",
+  marginTop:20
 },
 centerContainer: {
     flex: 1,
@@ -724,6 +991,26 @@ centerContainer: {
     fontSize: 20,
     fontWeight:"bold",
     color: "#f1efefff",
+  },
+  hiddenUsersEmptyContainer:{
+    justifyContent:"center",
+    alignItems:"center",
+    textAlign:"center",
+    height:300
+  },
+  hiddenUsersEmptyTitle:{
+    height:"25%",
+    color:"#fff",
+    fontSize:18,
+    fontWeight:"bold",
+    alignContent:"center",
+    textAlign:"center"
+  },
+  hiddenUsersEmptyBody:{
+    color:"#bbb8b8",
+     alignContent:"center",
+     textAlign:"center",
+    fontSize:12,
   },
   loadingText: {
     fontSize: 15,
