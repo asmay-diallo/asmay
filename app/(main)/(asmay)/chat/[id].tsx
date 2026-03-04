@@ -807,7 +807,9 @@ export default function ChatScreen() {
 
         {/* Overlay d'enregistrement vocal */}
         {isRecordingUI && (
-          <View style={styles.recordingOverlay}>
+          <View style={styles.recordingOverlay} 
+            onPress={handlePressOut}
+          >
             <View style={styles.recordingBox}>
               <View style={styles.recordingIndicator}>
                 <View style={styles.recordingDot} />
@@ -828,8 +830,7 @@ export default function ChatScreen() {
         <View style={styles.inputContainer}>
           {/* Bouton microphone */}
           <TouchableOpacity
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
+            onPress={handlePressIn}
             touchSoundDisabled={false}
             delayLongPress={300}
             style={[

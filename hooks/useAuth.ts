@@ -65,7 +65,7 @@ export const useAuth = (): UseAuthReturn => {
   const logout = async () => {
     await clearAuth();
     // Rediriger vers login
-    // router.navigate("/(auth)");
+    router.navigate("/(auth)");
   };
 
   const updateUser = async (userData: Partial<User>): Promise<void> => {

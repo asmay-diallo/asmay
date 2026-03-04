@@ -1,48 +1,33 @@
+
 import { Stack } from "expo-router";
-import { AuthProvider } from "../contexts/AuthContext";
 import { Provider } from "react-redux";
-import { useEffect, useState } from "react";
-import { StreamVideoProvider } from "../contexts/StreamVideoContext";
 import { store } from "../store/store";
-import { useAuth } from "../hooks/useAuth";
-import { AuthContext } from "../contexts/AuthContext";
-import ScreenLoading from "../components/ScreenLoading";
+import { AuthProvider } from "../contexts/AuthContext";
 import mobileAds from "react-native-google-mobile-ads";
-function RootLayout() {
+import { useEffect } from "react"
+
+export default function RootLayout() {
+  useEffect(() => {
+    const initAdMob = async () => {
+      try {
+        await mobileAds().initialize();
+        console.log("SDK AdMob initialisé");
+      } catch (error) {
+        console.error("Erreur AdMob:", error);
+      }
+    };
+    initAdMob();
+  }, []);
+
   return (
     <Provider store={store}>
       <AuthProvider>
-        {/* <StreamVideoProvider>  */}
-        <RootLayoutNav />
-        {/* </StreamVideoProvider> */}
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />          
+          <Stack.Screen name="(auth)" />         
+          <Stack.Screen name="(main)" />         
+        </Stack>
       </AuthProvider>
     </Provider>
-  );
-}
-
-export default function RootLayoutNav() {
-  const { isAuthenticated, loading } = useAuth();
-  const [truth, setTruth] = useState(true);
-  useEffect(() => {
-    const initAdMob = async () => {
-      await mobileAds().initialize();
-      console.log("SDK AdMob initialisé pour le test.");
-    };
-    initAdMob();
-    console.log("Est-il authentifié ? :", isAuthenticated);
-  }, []);
-
-  if (loading) {
-    return <ScreenLoading />;
-  }
-
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <Stack.Screen name="(auth)" />
-      ) : (
-        <Stack.Screen name="(main)" />
-      )}
-    </Stack>
   );
 }

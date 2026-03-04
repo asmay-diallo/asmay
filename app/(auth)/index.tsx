@@ -90,14 +90,6 @@ export default function LoginScreen() {
       setIsLoading(true);
       setError("");
 
-      console.log("🔐 Tentative de login avec:", {
-        email,
-        password: "***",
-        latitude: location?.latitude,
-        longitude: location?.longitude,
-      });
-
-      // 🔥 CORRECTION : Utiliser directement authAPI.login
       const response = await authAPI.login({
         email,
         password,
@@ -105,10 +97,8 @@ export default function LoginScreen() {
         longitude: location?.longitude,
       });
 
-      console.log("✅ Réponse login:", response.data);
 
       if (response.data.success && response.data.token && response.data.user) {
-        // 🔥 SAUVEGARDER les données utilisateur
         await saveUserData(response.data.user, response.data.token);
 
         // Alert.alert("Succès", "Connexion réussie !");
@@ -117,9 +107,7 @@ export default function LoginScreen() {
         throw new Error(response.data.message || "Échec de la connexion");
       }
     } catch (error: any) {
-      // console.error(" Erreur login:", error);
-
-      //  MEILLEUR MESSAGE D'ERREUR
+    
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -219,7 +207,7 @@ if (!networkConnected) {
         secureTextEntry={passwordLock}
       />
         <TouchableOpacity style={styles.passwordLock} onPress={displayPassword}>
-        <Ionicons name={passwordLock ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+        <Ionicons name={passwordLock ? "eye-off" : "eye"} size={26} color={"rgb(64, 61, 59)"} />
       </TouchableOpacity>
 
       <Button

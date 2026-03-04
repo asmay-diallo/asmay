@@ -321,21 +321,21 @@ export default function ProfileScreen() {
     }
   };
 
-
- if (networkConnected) {
-     return (
-        <View style={styles.centerContainer}>
-            <Ionicons
-           name="cloud-offline"
-           size={70}
-           color={"rgb(249, 244, 244)"}
-          />
-          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
-          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-        </View>
-      );
- }
+// 
+//  if (!networkConnected) {
+//      return (
+//         <View style={styles.centerContainer}>
+//             <Ionicons
+//            name="cloud-offline"
+//            size={70}
+//            color={"rgb(249, 244, 244)"}
+//           />
+//           <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+//           <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+//           <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
+//         </View>
+//       );
+//  }
 
 
   if (!userData) {

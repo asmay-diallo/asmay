@@ -462,7 +462,7 @@ if (!networkConnected) {
         secureTextEntry={passwordLock1}
       />
          <TouchableOpacity style={styles.passwordLock1} onPress={displayPassword1}>
-              <Ionicons name={passwordLock1 ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+              <Ionicons name={passwordLock1 ? "eye-off" : "eye"} size={26} color={"rgb(64, 61, 59)"} />
             </TouchableOpacity>
       <Input
         placeholder="Confirmer mot de passe*"
@@ -471,7 +471,7 @@ if (!networkConnected) {
         secureTextEntry={passwordLock2}
       />
         <TouchableOpacity style={styles.passwordLock2} onPress={displayPassword2}>
-              <Ionicons name={passwordLock2 ? "lock-closed" : "lock-open-outline"} size={26} color={"rgb(64, 61, 59)"} />
+              <Ionicons name={passwordLock2 ? "eye-off" : "eye"} size={26} color={"rgb(64, 61, 59)"} />
             </TouchableOpacity>
       <Input
         placeholder="Centres d'intérest ( separés par des virgules )"

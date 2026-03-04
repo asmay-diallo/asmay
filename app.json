@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "rgb(2, 2, 3)",
+        "backgroundColor": "#020203",
         "foregroundImage": "./assets/images/asmay-icon.png",
         "backgroundImage": "./assets/images/asmay-backgroundImage.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/asmay-icon.png",
+          "image": "./assets/images/asmay-splash-screen.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -44,10 +44,18 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+          "androidAppId": "ca-app-pub-5524198683293548~6412062690",
+          "iosAppId":"ca-app-pub-5524198683293548~4196138488"
         }
       ],
-      ["expo-build-properties"
+      ["expo-build-properties",
+       {
+    "android": {
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24
+    }
+  }
  ],
       "expo-audio",
       "@stream-io/video-react-native-sdk",
