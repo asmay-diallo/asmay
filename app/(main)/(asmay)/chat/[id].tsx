@@ -808,9 +808,8 @@ export default function ChatScreen() {
         {/* Overlay d'enregistrement vocal */}
         {isRecordingUI && (
           <View style={styles.recordingOverlay} 
-            onPress={handlePressOut}
           >
-            <View style={styles.recordingBox}>
+            <TouchableOpacity style={styles.recordingBox} onPress={handlePressOut}>
               <View style={styles.recordingIndicator}>
                 <View style={styles.recordingDot} />
                 <Text style={styles.recordingText}>
@@ -821,8 +820,8 @@ export default function ChatScreen() {
               <Text style={styles.recordingTime}>
                 {Math.floor(recordingDuration / 1000)}s
               </Text>
-              <Text style={styles.recordingHint}>Relâchez pour envoyer</Text>
-            </View>
+              <Text style={styles.recordingHint}>Cliquez pour envoyer</Text>
+            </TouchableOpacity>
           </View>
         )}
 
