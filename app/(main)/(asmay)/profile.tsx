@@ -299,7 +299,7 @@ export default function ProfileScreen() {
       {
         text: "Déconnecter",
         onPress: async () => {
-          await logout;
+          await logout();
         },
       },
     ]);

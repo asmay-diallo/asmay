@@ -124,7 +124,7 @@ export interface ARUser {
   distance: number;
   bearing: number;
   interests:{ 
-   common: [string],
+   common: string[],
    count:number
   };
   profilePicture?: string;

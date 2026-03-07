@@ -68,10 +68,7 @@ export default function ChatScreen() {
     return () => {
       if (socket && chatId) {
         socket.emit("leave_chat", chatId);
-        // socket.off("new_message");
-        // socket.off("message_sent");
-        // socket.off("message_error");
-
+    
         socket.off("new_message");
         socket.off("message_sent");
         socket.off("message_error");
