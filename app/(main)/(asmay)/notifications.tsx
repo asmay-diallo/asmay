@@ -23,6 +23,8 @@ import {
   RewardedAdEventType,
   TestIds,
   AdEventType,
+  BannerAd,
+  BannerAdSize
 } from "react-native-google-mobile-ads";
 import {useAuth} from "../../../hooks/useAuth"
 import { useAudioPlayer } from "expo-audio";
@@ -69,6 +71,11 @@ interface NotificationItem extends Signal {
 //   android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb', // Ad Unit ID pour Android
 // });
 
+// Configuration publicitaire
+const adUnitIdBan = __DEV__
+  ? TestIds.ADAPTIVE_BANNER
+  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+
 const adUnitId = __DEV__
   ? TestIds.REWARDED
   : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
@@ -87,6 +94,10 @@ const NotificationsScreen: React.FC = () => {
     null
   );
   const [networkConnected, setNetworkConnected] = useState<boolean>(false);
+
+
+  const bannerRef = useRef<BannerAd>(null);
+
 
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -329,7 +340,7 @@ const NotificationsScreen: React.FC = () => {
       console.log("🔄 Acceptation du signal:", signalId);
 
       const response = await signalAPI.respond(signalId, "accepted");
-      console.log("✅ Réponse acceptation COMPLÈTE:", response.data);
+            showRewardedAd();
       playSignalSound();
       // Extraction correcte du chatId selon la structure réelle
       const responseData = response.data.data;
@@ -719,13 +730,12 @@ const NotificationsScreen: React.FC = () => {
      source={require("../../../assets/images/asmay-home.png")}
       resizeMode="cover"
     style={styles.container}>
-      {/* {!networkConnected && (
-        <View style={styles.offlineIndicator}>
-          <Text style={styles.offlineText}>
-            📡 Hors ligne - 
-          </Text>
-        </View>
-      )} */}
+       {/* Bannière publicitaire */}
+                        <BannerAd 
+                          ref={bannerRef} 
+                          unitId={adUnitIdBan} 
+                          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
+                        />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Signaux</Text>
        <View style={styles.refraiche}>
@@ -800,7 +810,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#203447ff",
-    paddingTop:40
+    paddingTop:0
   },
   reButton: {
     width: "25%",

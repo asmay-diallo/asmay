@@ -116,9 +116,7 @@ const socketUrl =process.env.EXPO_PUBLIC_API_URL;
       // Cet événement sera utilisé dans handleSendSignal
     });
 
-    newSocket.on('signal_error', (error) => {
-      // console.error('❌ Erreur envoi signal:', error);
-      // Cet événement sera utilisé dans handleSendSignal
+    newSocket.on('signal_error', (error) => {nal
     });
 
     // 📨 Écouter les nouveaux signaux
@@ -154,7 +152,7 @@ const socketUrl =process.env.EXPO_PUBLIC_API_URL;
  
       Alert.alert(
       '🎉 Match 🎉', 
-      `${data.acceptedBy?.username } a accepté votre signal`,
+      `${data.acceptedBy?.username } a accepté votre signal. Vous pouvez commencer à chatter maintenant`,
       [
         {
           text: "💬 Chat",

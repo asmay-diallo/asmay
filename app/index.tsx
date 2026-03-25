@@ -2,14 +2,23 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import ScreenLoading from '../components/ScreenLoading';
 import {useEffect,useState} from "react"
+import { useChats } from "@/hooks/useChats";
+
 
 export default function Index() {
   const { isAuthenticated, loading } = useAuth();
    const [ready, setReady] = useState(false);
+   const {loadChats} = useChats()
+   
+    
 
  useEffect(() => {
+    const  initLoading = async()=>{
+        await loadChats()
+      }
+      initLoading()
     const minimumDelay = new Promise(resolve => 
-      setTimeout(resolve, 1000)
+      setTimeout(resolve, 0)
     );
     
     const authReady = !loading ? Promise.resolve() : 
@@ -26,12 +35,11 @@ export default function Index() {
       setReady(true);
     });
   }, [loading]);
+// 
+//   if (!ready) {
+//     return <ScreenLoading />;
+//   }
 
-  if (!ready) {
-    return <ScreenLoading />;
-  }
-
-  // La redirection se fait ICI
   if (isAuthenticated) {
     console.log(" Redirection vers (main)");
     return <Redirect href="/(main)" />;

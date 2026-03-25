@@ -8,6 +8,7 @@ export interface User {
   privacySettings?: PrivacySettings;
    bio?: string;
   profilePicture?: string;
+  lastActive:any
 }
 
 export interface Chat {
@@ -44,16 +45,17 @@ export interface Message {
     profilePicture?: string;
   };
   content: string;
-  chat: string;
+  chatId: string;
   audioUrl?: string;
   duration?:number;
   type?:string;
-  createdAt: string;
+  createdAt?: string;
   isSending?: boolean;
   hasError?: boolean;
   read?: boolean;
+   temp?: boolean;       
+  tempId?: string;    
 }
-
 export interface PrivacySettings {
   isVisible: boolean;
   showCommonInterestsOnly: boolean;
@@ -116,7 +118,22 @@ export interface ARMarkerProps {
   user: User;
   onPress: (user: User) => void;
 }
+// Types pour l'authentification
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  latitude?: number;  // Optionnel pour la géolocalisation
+  longitude?: number; // Optionnel pour la géolocalisation
+}
 
+export interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  interests?: string[];      // Optionnel
+  latitude?: number;         // Optionnel
+  longitude?: number;        // Optionnel
+}
 
 export interface ARUser {
   _id: string;
@@ -140,4 +157,51 @@ export interface ARUser {
 export interface AdvancedARMarkerProps {
   users: NearbyUser[];
   onUserPress: (userId: string) => void;
+}
+// ============ MESSAGE VOCAL ============
+export interface VoiceMessage extends Message {
+  audioUrl: string;
+  duration: number;
+  type: 'audio';
+}
+
+// ============ ÉTATS REDUX ============
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface SignalState {
+  incomingSignals: Signal[];
+  outgoingSignals: Signal[];
+  loading: boolean;
+  error: string | null;
+  unreadCount: number;
+}
+
+export interface ChatState {
+  chats: Chat[];
+  currentChat: Chat | null;
+  loading: boolean;
+  error: string | null;
+  unreadCount: number;
+}
+
+export interface MessageState {
+  messagesByChat: Record<string, Message[]>;
+  loading: boolean;
+  error: string | null;
+  sendingStatus: Record<string, 'sending' | 'sent' | 'error'>;
+}
+
+export interface VoiceMessageState {
+  voiceMessagesByChat: Record<string, VoiceMessage[]>;
+  currentlyPlaying: string | null;
+  playbackStatus: Record<string, { isPlaying: boolean; position: number; duration: number }>;
+  uploadProgress: Record<string, number | 'error'>;
+  loading: boolean;
+  error: string | null;
 }

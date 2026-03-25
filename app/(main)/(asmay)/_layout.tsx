@@ -3,9 +3,17 @@ import {useEffect, useState} from "react";
 import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {useChats} from "../../../hooks/useChats"
 
 export default function MainLayout() {
   const [unreadMessage,setUnreadMessage] = useState<number|undefined>()
+  const {unreadCount:globalUnreadCount} = useChats()
+  useEffect(()=>{
+
+const unread = globalUnreadCount >  0 ? globalUnreadCount :undefined
+
+setUnreadMessage(unread)
+  },[globalUnreadCount])
   const insets = useSafeAreaInsets();
 
   return (
@@ -87,7 +95,7 @@ export default function MainLayout() {
               color={color} 
             />
           ),
-          tabBarBadge:unreadMessage  
+          tabBarBadge:unreadMessage
         }
       }
 

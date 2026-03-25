@@ -21,6 +21,7 @@ export default function AuthLayout() {
     >
       <Stack.Screen name="index" options={{ title: "Connexion" }} />
       <Stack.Screen name="register" options={{ title: "Inscription" }} />
+      <Stack.Screen name="verify" options={{ title: "Vérification de l'email" }} />
     </Stack>
   );
 }

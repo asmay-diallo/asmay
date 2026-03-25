@@ -1,6 +1,5 @@
 
-//--------------------------
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, } from "react";
 import {
   View,
   Text,
@@ -11,109 +10,318 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
   ImageBackground,
   Image,
+  Dimensions,
+  Modal,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useLocalSearchParams,useRouter } from "expo-router";
-import { Audio } from "expo-av"; 
-import {
-  useAudioRecorder,
-  useAudioPlayer,
-  AudioModule,
-  setAudioModeAsync,
-  RecordingPresets,
-} from "expo-audio";
-// import { chatAPI } from "../../services/api";
-import { chatAPI } from "@/services/api";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Audio } from "expo-av";
+import { useAudioPlayer } from "expo-audio";
+import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
+
+// Hooks Redux
+import { useMessages } from "../../../../hooks/useMessages";
+import { useChats } from "../../../../hooks/useChats";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useSocket } from "../../../../hooks/useSocket";
-// import { useStreamVideo } from "@/contexts/StreamVideoContext";
-import { Message } from "../../../../types";
+import { useAudioPlayer as useAudioPlayerHook } from "../../../../hooks/useAudioPlayer";
+import { chatAPI } from "@/services/api";
+import { receiveNewVoiceMessage, addTemporaryVoiceMessage, markVoiceMessageError, updateTemporaryVoiceMessage,receiveNewMessage,addTemporaryMessage,updateMessageStatus } from "@/store/slices/messageSlice";
+
+// Components
+import { VoiceMessagePlayer } from "../../../../components/VoiceMessagePlayer";
+import PublicProfileScreen from "../../../../components/PublicProfileScreen";
 import Input from "@/components/Input";
+import { useDispatch } from "react-redux";
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Configuration publicitaire
+const adUnitId = __DEV__
+  ? TestIds.ADAPTIVE_BANNER
+  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
 
 export default function ChatScreen() {
-  const { id: chatId } = useLocalSearchParams();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-  // const { streamClient, createCall } = useStreamVideo();
+  const dispatch = useDispatch();
+  const { id: chatId } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { user } = useAuth();
-  const router = useRouter()
-  const { socket, isConnected } = useSocket();
-  const flatListRef = useRef<FlatList>(null);
-  const localAudioUris = useRef<Map<string, string>>(new Map());
+  const { socket, isConnected, onlineUsers } = useSocket();
+  
+  // Hook Redux pour les messages
+  const { 
+    messages, 
+    loading: messagesLoading, 
+    sendMessage: sendMessageRedux,
+    isSending,
+    markAllAsRead, 
+  unreadCount, 
+  enterChat,
+  leaveChat,
+  } = useMessages(chatId);
+  
+  // Hook Redux pour récupérer l'autre utilisateur
+  const { chats, getOtherUser,updateInChatLastMessage } = useChats();
+  
+  const [otherUser, setOtherUser] = useState<any>(null);
+  const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [otherUserLastActive, setOtherUserLastActive] = useState<Date | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSendingLocal, setIsSendingLocal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
 
-  // ==================== ÉTATS POUR L'ENREGISTREMENT VOCAL ====================
+  const flatListRef = useRef<FlatList>(null);
+  const bannerRef = useRef<BannerAd>(null);
+
+  // États pour l'enregistrement vocal
+ 
+  const [isRecordingModalVisible, setIsRecordingModalVisible] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingUI, setIsRecordingUI] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-
-  // Références pour les timers
   const recordingDurationRef = useRef(0);
   const recordingDurationIntervalRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    loadMessages();
-    setupSocketListeners();
+  const audioPlayer = useAudioPlayer();
+  const player = useAudioPlayer(require("../../../../assets/sound/sendMessage.mp3"));
+  const { stopAudio } = useAudioPlayerHook();
 
-    if (socket && chatId) {
-      socket.emit("join_chat", chatId);
+  // ==================== CHARGEMENT DES INFOS DU CHAT ====================
+ useEffect(() => {
+  enterChat();
+  return () => leaveChat();
+}, [enterChat, leaveChat]);
+useFocusEffect(
+  useCallback(() => {
+    if (unreadCount > 0) {
+      console.log(`📖 Marquage de ${unreadCount} message(s) comme lu à l'ouverture du chat`);
+      markAllAsRead();
     }
-
-    return () => {
-      if (socket && chatId) {
-        socket.emit("leave_chat", chatId);
-    
-        socket.off("new_message");
-        socket.off("message_sent");
-        socket.off("message_error");
-        socket.off("new_voice_message");
-        socket.off("voice_message_sent");
-        socket.off("voice_message_confirmed");
-        socket.off("voice_message_updated");
-        socket.off("voice_message_error");
-      }
-      // Nettoyer les timers
-      if (recordingDurationIntervalRef.current) {
-        clearInterval(recordingDurationIntervalRef.current);
-      }
-      if (recordingTimerRef.current) {
-        clearTimeout(recordingTimerRef.current);
+  }, [unreadCount, markAllAsRead])
+);
+  useEffect(() => {
+    const loadChatInfo = async () => {
+      try {
+        // Attendre que les chats soient chargés
+        if (chats.length > 0) {
+          const currentChat = chats.find((chat: any) => chat._id === chatId);
+          if (currentChat) {
+            const other = getOtherUser(currentChat);
+            setOtherUser(other);
+            setOtherUserLastActive(other?.lastActive);
+          }
+        }
+      } catch (error) {
+        console.error("Erreur chargement infos chat:", error);
       }
     };
-  }, [chatId, socket]);
+    loadChatInfo();
+  }, [chatId, chats, getOtherUser]);
+  // 1. Rejoindre la room du chat
+useEffect(() => {
+  if (!socket || !chatId) return;
 
-  // ==================== FONCTIONS D'ENREGISTREMENT VOCAL ====================
+  console.log(`🔌 Socket ${socket.id} rejoint la room chat_${chatId}`);
+  socket.emit("join_chat", chatId);
 
+  return () => {
+    console.log(`🔌 Socket ${socket.id} quitte la room chat_${chatId}`);
+    socket.emit("leave_chat", chatId);
+  };
+}, [socket, chatId]);
+
+// 2. Écouter les messages en temps réel
+useEffect(() => {
+  if (!socket) return;
+
+  console.log("🎧 Configuration des écouteurs socket");
+
+  const handleNewMessage = (messageData: any) => {
+    console.log("📨 Message reçu en temps réel:", messageData);
+    
+    if ((messageData.chat === chatId || messageData.chatId === chatId) 
+        && messageData.sender._id !== user?._id) {
+      
+      dispatch(receiveNewMessage(messageData));
+       updateInChatLastMessage({   // ✅ Pas "updateInChatLastMessage"
+      chatId: messageData.chatId || messageData.chat,
+      content: messageData.content,
+      senderId: messageData.sender._id,
+      currentUserId: user?._id || '',
+      lastActivity: messageData.createdAt,
+      type:messageData.type
+    });
+      player.play();
+      scrollToBottom();
+    }
+  };
+
+  const handleNewVoiceMessage = (messageData: any) => {
+    console.log("🎤 Message vocal reçu en temps réel:", messageData);
+    
+    if ((messageData.chat === chatId || messageData.chatId === chatId) 
+        && messageData.sender._id !== user?._id) {
+      
+      dispatch(receiveNewVoiceMessage(messageData));
+          updateInChatLastMessage({   // ✅ Pas "updateInChatLastMessage"
+      chatId: messageData.chatId || messageData.chat,
+      content: messageData.content,
+      senderId: messageData.sender._id,
+      currentUserId: user?._id || '',
+      lastActivity: messageData.createdAt,
+      type:messageData.type
+    });
+      player.play();
+      scrollToBottom();
+    }
+  };
+
+  socket.on("new_message", handleNewMessage);
+  socket.on("new_voice_message", handleNewVoiceMessage);
+
+  return () => {
+    socket.off("new_message", handleNewMessage);
+    socket.off("new_voice_message", handleNewVoiceMessage);
+  };
+}, [socket, chatId, user?._id, dispatch, player]);
+
+  // ==================== SURVEILLANCE DU STATUT EN LIGNE ====================
+  useEffect(() => {
+    if (otherUser?._id && onlineUsers) {
+      setOtherUserOnline(onlineUsers.includes(otherUser._id));
+    }
+  }, [onlineUsers, otherUser?._id]);
+
+  // ==================== GESTION DU PROFIL ====================
+  const handleOpenProfile = (userId: string) => {
+    setSelectedUserId(userId);
+    setIsUserProfileVisible(true);
+  };
+
+  const handleCloseProfile = () => {
+    setIsUserProfileVisible(false);
+    setSelectedUserId(null);
+  };
+
+  // ==================== ENVOI DE MESSAGE ====================
+
+const sendMessage = async () => {
+  const messageContent = newMessage.trim();
+  if (!messageContent || isSendingLocal) return;
+
+  const tempId = `temp-${Date.now()}`;
+
+  // Ajout optimiste via REDUX (pas de state local)
+  dispatch(addTemporaryMessage({
+    _id:tempId,
+    chatId: chatId,
+    content: messageContent,
+    sender: {
+      _id: user?._id || "",
+      username: user?.username || "Vous",
+      profilePicture: user?.profilePicture
+    },
+  }));
+
+  setNewMessage("");
+  setIsSendingLocal(true);
+  scrollToBottom();
+
+  // Envoyer via SOCKET
+  if (socket && isConnected) {
+    console.log("📤 Envoi du message via socket:", { chatId, content: messageContent, tempId });
+    
+    socket.emit("send_message", {
+      chatId: chatId,
+      content: messageContent,
+      tempId: tempId,
+      timestamp: new Date(),
+    });
+    
+    // Écouter la confirmation
+    const handleMessageSent = (data: { tempId: string; messageId: string }) => {
+      if (data.tempId === tempId) {
+        console.log("✅ Message confirmé par le serveur:", data);
+        // ✅ Mettre à jour via REDUX
+        dispatch(updateMessageStatus({
+          tempId: data.tempId,
+          status: 'sent',
+          messageId: data.messageId
+        }));
+        socket.off("message_sent", handleMessageSent);
+      }
+    };
+    
+    const handleMessageError = (error: { tempId: string; error: string }) => {
+      if (error.tempId === tempId) {
+        console.error("❌ Erreur envoi message:", error);
+        // ✅ Marquer l'erreur via REDUX
+        dispatch(updateMessageStatus({
+          tempId: error.tempId,
+          status: 'error'
+        }));
+        socket.off("message_error", handleMessageError);
+      }
+    };
+    
+    socket.on("message_sent", handleMessageSent);
+    socket.on("message_error", handleMessageError);
+    
+    // Timeout de sécurité
+    setTimeout(() => {
+      if (socket) {
+        socket.off("message_sent", handleMessageSent);
+        socket.off("message_error", handleMessageError);
+      }
+      dispatch(updateMessageStatus({
+        tempId: tempId,
+        status: 'error'
+      }));
+    }, 10000);
+    
+  } else {
+    // Fallback REST si socket pas connecté
+    try {
+      const response = await chatAPI.sendMessage(chatId as string, messageContent);
+      if (response.data.success) {
+        // ✅ Ajouter le vrai message via REDUX
+        dispatch(receiveNewMessage(response.data.data));
+      }
+    } catch (error: any) {
+      console.error("❌ Erreur envoi message:", error);
+      dispatch(updateMessageStatus({
+        tempId: tempId,
+        status: 'error'
+      }));
+    }
+  }
+
+  setIsSendingLocal(false);
+};
+
+  // ==================== ENREGISTREMENT VOCAL ====================
   const startRecording = async () => {
     try {
-      // 1. Demander la permission
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission requise",
-          "ASMAY a besoin d'accéder à votre microphone pour l'enregistrement"
-        );
+        Alert.alert("Permission requise", "ASMAY a besoin d'accéder à votre microphone");
         return;
       }
 
-      // 2. Configurer l'audio
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
-        staysActiveInBackground:true,
+        staysActiveInBackground: true,
       });
 
-      // 3. Créer et démarrer l'enregistrement
       const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await newRecording.startAsync();
 
       setRecording(newRecording);
@@ -121,665 +329,305 @@ export default function ChatScreen() {
       setRecordingDuration(0);
       recordingDurationRef.current = 0;
 
-      // 4. Démarrer le timer pour la durée
       recordingDurationIntervalRef.current = setInterval(() => {
-        recordingDurationRef.current += 100; // Incrémente de 100ms
-        setRecordingDuration((prev) => prev + 100);
+        recordingDurationRef.current += 100;
+        setRecordingDuration(prev => prev + 100);
       }, 100);
 
       console.log("🎤 Enregistrement démarré");
     } catch (error) {
-      // console.error("❌ Erreur démarrage enregistrement:", error);
       Alert.alert("Erreur", "Impossible de démarrer l'enregistrement");
     }
   };
 
-  const stopRecording = async (): Promise<string | null> => {
-    if (!recording) return null;
+  const stopRecording = async () => {
+    if (!recording) return;
 
     try {
-      // 1. Arrêter le timer de durée
       if (recordingDurationIntervalRef.current) {
         clearInterval(recordingDurationIntervalRef.current);
-        recordingDurationIntervalRef.current = null;
       }
 
-      // 2. Arrêter l'enregistrement
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
-      // 3. Réinitialiser les états
+      if (!uri) throw new Error("Aucun URI d'audio retourné");
+
+      const totalDuration = recordingDurationRef.current;
+      if (totalDuration < 1000) {
+        Alert.alert("Trop court", "Le message vocal doit durer au moins 1 seconde");
+        return;
+      }
+
+      const durationInSeconds = Math.floor(totalDuration / 1000);
+      setIsRecordingModalVisible(false)
+      await sendVoiceMessage(uri, durationInSeconds);
+
+      setRecordingDuration(0);
+      recordingDurationRef.current = 0;
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible d'envoyer le message vocal");
+    } finally {
       setRecording(null);
       setIsRecording(false);
-      setIsRecordingUI(false);
-
-      console.log("⏹️ Enregistrement arrêté, URI:", uri);
-      return uri;
-    } catch (error) {
-      console.error("❌ Erreur arrêt enregistrement:", error);
-      return null;
+      setIsRecordingModalVisible(false);
     }
   };
-
-  // ==================== GESTION DE L'INTERFACE D'ENREGISTREMENT ====================
-
-  const handlePressIn = () => {
-    // Démarrer un timer pour l'appui long
-    recordingTimerRef.current = setTimeout(async () => {
-      await startRecording();
-      setIsRecordingUI(true);
-    }, 200);
+ // OUVERTURE DU MODAL
+  const openRecordingModal = () => {
+    setIsRecordingModalVisible(true);
+    startRecording();
   };
-
-  const handlePressOut = async () => {
-    // 1. Annuler le timer d'appui long
-    if (recordingTimerRef.current) {
-      clearTimeout(recordingTimerRef.current);
-      recordingTimerRef.current = null;
-    }
-
-    // 2. Si on était en train d'enregistrer
-    if (isRecording && recording) {
-      try {
-        const audioUri = await stopRecording();
-
-        if (!audioUri) {
-          throw new Error("Aucun URI d'audio retourné");
-        }
-
-        // 3. Vérifier la durée minimale (1 seconde)
-        const totalDuration = recordingDurationRef.current;
-        if (totalDuration < 1000) {
-          Alert.alert(
-            "Trop court",
-            "Le message vocal doit durer au moins 1 seconde"
-          );
-          return;
-        }
-
-        // 4. Envoyer le message vocal
-        const durationInSeconds = Math.floor(totalDuration / 1000);
-        await sendVoiceMessage(audioUri, durationInSeconds);
-
-        // 5. Réinitialiser
-        setRecordingDuration(0);
-        recordingDurationRef.current = 0;
-      } catch (error) {
-        // console.error("❌ Erreur lors de l'envoi du message vocal:", error);
-        Alert.alert("Erreur", "Impossible d'envoyer le message vocal");
+   // FERMETURE DU MODAL (annulation)
+  const cancelRecording = async () => {
+    if (recording) {
+      await recording.stopAndUnloadAsync();
+      setRecording(null);
+      setIsRecording(false);
+      if (recordingDurationIntervalRef.current) {
+        clearInterval(recordingDurationIntervalRef.current);
       }
     }
+    setIsRecordingModalVisible(false);
+    setRecordingDuration(0);
+    recordingDurationRef.current = 0;
   };
 
-  // ==================== ENVOI DU MESSAGE VOCAL ====================
+  const sendVoiceMessage = useCallback(async (audioUri: string, durationSeconds: number) => {
+    const tempId = `temp-voice-${Date.now()}`;
 
-  const sendVoiceMessage = async (
-    audioUri: string,
-    durationSeconds: number
-  ) => {
-    try {
-      // ID temporaire pour le frontend
-      const tempId = `temp-voice-${Date.now()}`;
-
-      // 1. Créer le message temporaire dans l'UI
-      const tempMessage: Message = {
-        _id: tempId,
-        sender: {
-          _id: user?._id || "",
-          username: user?.username || "Vous",
-        },
-        content: "",
-        audioUrl: "", // Vide pour l'instant
-        duration: durationSeconds,
-        chat: chatId as string,
-        createdAt: new Date().toISOString(),
-        type: "audio",
-        isSending: true,
-      };
-
-      setMessages((prev) => [...prev, tempMessage]);
-      scrollToBottom();
-
-      // 2. Émettre via socket IMMÉDIATEMENT (pour le temps réel)
-      if (socket && isConnected) {
-        socket.emit("send_voice_message", {
-          chatId: chatId,
-          tempId: tempId,
-          duration: durationSeconds,
-          // On envoie l'URI temporaire, le backend la transformera en URL
-          audioUrl: `temp://voice/${tempId}`,
-          timestamp: new Date(),
-        });
-      }
-
-      // 3. Upload via API REST (côté serveur)
-      const response = await chatAPI.sendVoiceMessage(
-        chatId as string,
-        audioUri,
-        durationSeconds
-      );
-
-      if (response.data.success) {
-        const {
-          audioUrl,
-          duration: serverDuration,
-          _id: messageId,
-        } = response.data.data;
-
-        // 4. Mettre à jour le message avec les vraies données
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === tempId
-              ? {
-                  ...msg,
-                  _id: messageId,
-                  audioUrl: response.data.data.audioFullUrl || audioUrl,
-                  duration: serverDuration,
-                  isSending: false,
-                }
-              : msg
-          )
-        );
-
-        // 5. Notifier via socket que le message est définitivement stocké
-        if (socket && isConnected) {
-          socket.emit("voice_message_stored", {
-            tempId: tempId,
-            messageId: messageId,
-            chatId: chatId,
-          });
-        }
-
-        console.log("✅ Message vocal complet envoyé:", messageId);
-      } else {
-        throw new Error(response.data.message || "Échec de l'envoi");
-      }
-    } catch (error: any) {
-      // console.error("❌ Erreur envoi message vocal:", error);
-      const tempId = `temp-voice-${Date.now()}`;
-
-      // Marquer le message comme erreur
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === tempId
-            ? { ...msg, hasError: true, isSending: false }
-            : msg
-        )
-      );
-
-      Alert.alert(
-        "Erreur",
-        error.response?.data?.message || "Impossible d'envoyer le message vocal"
-      );
-    }
-  };
-
-  // ==================== LECTURE DES MESSAGES VOCAUX ====================
-  const audioPlayer = useAudioPlayer();
-  const playAudioMessage = async (audioUrl: string) => {
-    if (audioUrl && audioUrl.startsWith("/")) {
-      audioUrl = `https://asmay-3666dae6847a.herokuapp.com${audioUrl}`;
-    }
-    try {
-      await audioPlayer.replace({ uri: audioUrl });
-      // Jouer le son
-      audioPlayer.play();
-      console.log(" Lecture audio terminée");
-    } catch (error) {
-      console.error(" Erreur lecture audio:", error);
-    }
-  };
-
-  const player = useAudioPlayer(
-    require("../../../../assets/sound/sendMessage.mp3")
-  );
-  const playMessageSound = () => {
-    player.seekTo(0);
-    player.play();
-
-  };
-  
-  //=======================FONCTION POUR  LANCER L'APPEL VIDEO ========================
-
-  // const startVideoCall = async () => {
-  //   try {
-  //     // Utiliser l'ID du chat comme ID d'appel pour le retrouver facilement
-  //     console.log("Appel Vidéo !")
-  //     const call = await createCall('default', `chat_${chatId}`);
-  //   
-  //     // Rejoindre l'appel (crée la salle)
-  //     await call.join({ create: true });
-  //     
-  //     // Naviguer vers l'écran d'appel
-  //     router.navigate({
-  //       pathname: '/(main)/(asmay)/chat/videoCall',
-  //       params: { 
-  //         callId: call.id,
-  //         chatId: chatId 
-  //       }
-  //     });
-  //     
-  //     // Optionnel : Envoyer une notification à l'autre participant via Socket.io
-  //     if (socket && isConnected) {
-  //       socket.emit('video_call_initiated', {
-  //         chatId,
-  //         callId: call.id,
-  //         callerId: user?._id,
-  //         callerName: user?.username
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.error('❌ Erreur démarrage appel vidéo:', error);
-  //     Alert.alert('Erreur', 'Impossible de démarrer l\'appel vidéo');
-  //   }
-  // };
-
-  // ==================== FONCTIONS ORIGINALES DU CHAT
-
-  const setupSocketListeners = () => {
-    if (!socket) return;
-
-    const receivedMessageIds = new Set();
-
-    socket.on("new_message", (messageData: Message) => {
-      playMessageSound();
-      if (messageData.chat === chatId) {
-        if (messageData.sender._id === user?._id) return;
-        if (receivedMessageIds.has(messageData._id)) return;
-
-        setMessages((prev) => {
-          const alreadyExists = prev.some(
-            (msg) =>
-              msg._id === messageData._id ||
-              msg._id === `temp-${messageData._id}` ||
-              (msg.content === messageData.content &&
-                msg.sender._id === messageData.sender._id &&
-                Math.abs(
-                  new Date(msg.createdAt).getTime() -
-                    new Date(messageData.createdAt).getTime()
-                ) < 1000)
-          );
-
-          if (alreadyExists) return prev;
-          receivedMessageIds.add(messageData._id);
-          return [...prev, messageData];
-        });
-
-        scrollToBottom();
-      }
-    });
-
-    socket.on("message_sent", (data: { messageId: string; tempId: string }) => {
-      setMessages((prev) => {
-        const newMessages = prev.filter(
-          (msg) => !(msg._id === data.tempId || msg._id === data.messageId)
-        );
-
-        return [
-          ...newMessages,
-          {
-            ...prev.find((msg) => msg._id === data.tempId),
-            _id: data.messageId,
-            isSending: false,
-            hasError: false,
-          } as Message,
-        ];
-      });
-
-      setIsSending(false);
-    });
-
-    socket.on("message_error", (error: { tempId?: string; error: string }) => {
-      if (error.tempId) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === error.tempId
-              ? { ...msg, hasError: true, isSending: false }
-              : msg
-          )
-        );
-      }
-      setIsSending(false);
-    });
-
-    // Réception d'un nouveau message vocal
-    socket.on("new_voice_message", (messageData: Message) => {
-      playMessageSound();
-      console.log(" DEBUG - Message vocal reçu:", {
-        messageId: messageData._id,
-        audioUrl: messageData.audioUrl,
-        type: messageData.type,
-        duration: messageData.duration,
-        sender: messageData.sender?.username,
-        isMe: messageData.sender?._id === user?._id,
-      });
-      if (messageData.chat === chatId) {
-        // Vérifier que ce n'est pas notre propre message
-        if (messageData.sender._id === user?._id) {
-          return; // C'est notre message, on l'ignore
-        }
-
-        // Ajouter le message à la liste
-        setMessages((prev) => {
-          const alreadyExists = prev.some(
-            (msg) =>
-              msg._id === messageData._id ||
-              (msg.type === "audio" && msg.audioUrl === messageData.audioUrl)
-          );
-
-          if (alreadyExists) return prev;
-          return [...prev, messageData];
-        });
-
-        scrollToBottom();
-        console.log("🔊 Message vocal reçu:", messageData.duration + "s");
-      }
-    });
-
-    // Confirmation d'envoi via socket (avant l'API REST)
-    socket.on(
-      "voice_message_sent",
-      (data: { tempId: string; messageId: string }) => {
-        console.log("✅ Message vocal envoyé (socket):", data.tempId);
-
-        // Marquer le message comme envoyé
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === data.tempId ? { ...msg, isSending: false } : msg
-          )
-        );
-      }
-    );
-
-    // Confirmation finale quand le backend a stocké le message
-    socket.on(
-      "voice_message_confirmed",
-      (data: { oldTempId: string; newMessageId: string }) => {
-        console.log(
-          "✅ Message vocal confirmé (backend):",
-          data.oldTempId,
-          "->",
-          data.newMessageId
-        );
-
-        // Remplacer l'ID temporaire par l'ID réel
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === data.oldTempId
-              ? { ...msg, _id: data.newMessageId }
-              : msg
-          )
-        );
-      }
-    );
-
-    // Mise à jour quand un autre utilisateur a son message confirmé
-    socket.on(
-      "voice_message_updated",
-      (data: { oldTempId: string; newMessageId: string }) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg._id === data.oldTempId
-              ? { ...msg, _id: data.newMessageId }
-              : msg
-          )
-        );
-      }
-    );
-
-    // Erreur d'envoi via socket
-    socket.on(
-      "voice_message_error",
-      (error: { tempId?: string; error: string }) => {
-        console.error("❌ Erreur socket message vocal:", error);
-
-        if (error.tempId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === error.tempId
-                ? { ...msg, hasError: true, isSending: false }
-                : msg
-            )
-          );
-        }
-
-        Alert.alert(
-          "Erreur",
-          error.error || "Impossible d'envoyer le message vocal"
-        );
-      }
-    );
-  };
-
-  const loadMessages = async () => {
-    try {
-      const response = await chatAPI.getMessages(chatId as string);
-
-      if (response.data.success && response.data.data) {
-        setMessages(response.data.data);
-        setTimeout(() => scrollToBottom(), 200);
-      } else {
-        throw new Error(
-          response.data.message || "Erreur de chargement des messages"
-        );
-      }
-    } catch (error) {
-      console.error("Erreur chargement messages:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (flatListRef.current && messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  };
-
-  const sendMessage = async () => {
-    const messageContent = newMessage.trim();
-    if (!messageContent || isSending) return;
-
-    const tempMessage: Message = {
-      _id: `temp-${Date.now()}`,
+    // 1. Message temporaire via Redux
+    dispatch(addTemporaryVoiceMessage({
+      _id:tempId,
+      chatId: chatId as string,
+      content:"",
+      audioUrl:audioUri,
+      duration: durationSeconds,
       sender: {
         _id: user?._id || "",
         username: user?.username || "Vous",
+        profilePicture: user?.profilePicture
       },
-      content: messageContent,
+    }));
+ 
+    scrollToBottom();
 
-      chat: chatId as string,
-      createdAt: new Date().toISOString(),
-      isSending: true,
-    };
+    // 2. Notification socket
+    if (socket && isConnected) {
+      socket.emit("send_voice_message", {
+        chatId: chatId,
+        tempId: tempId,
+        duration: durationSeconds,
+        audioUrl: `temp://voice/${tempId}`,
+        timestamp: new Date(),
+      });
+    }
 
     try {
-      setIsSending(true);
-      setNewMessage("");
-      setMessages((prev) => [...prev, tempMessage]);
-      scrollToBottom();
+      // 3. Upload
+      const response = await chatAPI.sendVoiceMessage(chatId as string, audioUri, durationSeconds);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        
+        // 4. Mise à jour du message
+        dispatch(updateTemporaryVoiceMessage({
+          tempId,
+          chatId:data.chatId,
+          messageId: data._id,
+          audioUrl: data.audioFullUrl || data.audioUrl,
+          duration: data.duration,
+        }));
 
-      if (socket && isConnected) {
-        socket.emit("send_message", {
-          chatId: chatId,
-          content: messageContent,
-          tempId: tempMessage._id,
-        });
-      } else {
-        const response = await chatAPI.sendMessage(
-          chatId as string,
-          messageContent
-        );
-
-        if (response.data.success) {
-          const newMessageData = response.data.data;
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === tempMessage._id
-                ? { ...newMessageData, isSending: false }
-                : msg
-            )
-          );
+        // 5. Confirmation socket
+        if (socket && isConnected) {
+          socket.emit("voice_message_stored", {
+            tempId: tempId,
+            messageId: data._id,
+            chatId: chatId,
+          });
         }
+      } else {
+        throw new Error(response.data.message);
       }
-    } catch (error) {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === tempMessage._id
-            ? { ...msg, hasError: true, isSending: false }
-            : msg
-        )
-      );
-    } finally {
-      setIsSending(false);
+    } catch (error: any) {
+      console.error("❌ Erreur envoi vocal:", error);
+      
+      dispatch(markVoiceMessageError({ tempId,chatId }));
+      
+    
     }
+  }, [chatId, user, socket, isConnected, dispatch]);
+
+  // ==================== UTILITAIRES ====================
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
-  const retrySendMessage = (messageId: string) => {
-    const failedMessage = messages.find((msg) => msg._id === messageId);
-    if (failedMessage) {
-      setNewMessage(failedMessage.content);
-      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-    }
+  const getLastActiveText = (lastActive?: Date): string => {
+    if (!lastActive) return '';
+    
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(lastActive).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 0.1) return 'En ligne';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `Il y a ${diffDays} j`;
   };
- 
 
   // ==================== RENDU DES MESSAGES ====================
-
-  const renderMessage = ({ item }: { item: Message }) => {
-    if (!item || !item.sender) return null;
+  const renderMessage = ({ item }: { item: any }) => {
+    if (!item?.sender) return null;
 
     const isMyMessage = item.sender._id === user?._id;
-    const isVoiceMessage = item.type === "audio" || item.audioUrl;
-
+    const isVoiceMessage = item.type === "audio" || !!item.audioUrl;
+    const sending =isSendingLocal;
+    
     return (
       <View
         style={[
-          styles.messageContainer,
-          isMyMessage ? styles.myMessage : styles.theirMessage,
-          item.hasError && styles.messageError,
+          styles.messageRow,
+          isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
         ]}
       >
-        {(isMyMessage || (!isMyMessage))&&
-          (item.sender.profilePicture ? (
+        <View style={styles.avatarContainer}>
+          {item.sender.profilePicture ? (
             <Image
               source={{ uri: item.sender.profilePicture }}
-              style={styles.image}
+              style={styles.avatar}
             />
           ) : (
-            <Text        style={styles.imag}>{item.sender.username?.charAt(0).toUpperCase() || "U"}</Text>
-          ))}
-
-        {isVoiceMessage ? (
-          // Message vocal
-          <TouchableOpacity
-            onPress={() => playAudioMessage(item.audioUrl!)}
-            style={styles.voiceMessageContainer}
-          >
-            <Text style={[styles.voiceIcon, isMyMessage && styles.myVoiceIcon]}>
-                   <Ionicons      
-                              name={"mic"} 
-                              size={27} 
-                             color={"red"} 
-                          />
-             
-            </Text>
-            <View style={styles.voiceMessageInfo}>
-              <Text
-                style={[
-                  styles.voiceMessageText,
-                  isMyMessage && styles.myVoiceMessageText,
-                ]}
-              >
-                Message vocal
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>
+                {item.sender.username?.charAt(0).toUpperCase() || "?"}
               </Text>
-              <Text
-                style={[
-                  styles.voiceDuration,
-                  isMyMessage && styles.myVoiceDuration,
-                ]}
-              >
-                {item.duration || 0}s
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ) : (
-          // Message texte
-          <Text
-            style={[styles.messageText, isMyMessage && styles.myMessageText]}
-          >
-            {item.content}
-          </Text>
-        )}
-
-        <View style={styles.messageFooter}>
-          <Text style={[styles.time, isMyMessage && styles.myTime]}>
-            {new Date(item.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-          {isMyMessage && (
-            <View style={styles.statusContainer}>
-              {item.isSending ? (
-                <ActivityIndicator size="small" color="#fbf6f6" />
-               
-               ) :( <Ionicons      
-                              name={"eye"} 
-                              size={24} 
-                             color={"white"} 
-                             style={styles.backButton}
-                          />
-              )}
-              {item.hasError && (
-                <TouchableOpacity onPress={() => retrySendMessage(item._id)}>
-                  <Text style={styles.retryText}>🔄</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
+        </View>
+
+        <View
+          style={[
+            styles.messageBubble,
+            isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
+            item.hasError && styles.messageError,
+          ]}
+        >
+          {!isMyMessage && (
+            <Text style={styles.senderName}>{item.sender.username}</Text>
+          )}
+
+          {isVoiceMessage ? (
+            <VoiceMessagePlayer
+              audioUrl={item.audioUrl}
+              duration={item.duration || 0}
+              isMyMessage={isMyMessage}
+              messageId={item._id}
+            />
+          ) : (
+            <Text
+              style={[
+                styles.messageText,
+                isMyMessage && styles.myMessageText,
+              ]}
+            >
+              {item.content}
+            </Text>
+          )}
+
+          <View style={styles.messageFooter}>
+            <Text style={[styles.time, isMyMessage && styles.myTime]}>
+              {new Date(item.createdAt).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+            {isMyMessage && (
+              <View style={styles.statusContainer}>
+                {sending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    {item.hasError ? (
+                      <Ionicons name="alert-circle" size={16} color="#ff4444" />
+                    ) : (
+                      otherUserOnline ? (
+                        <Ionicons name="checkmark-done" size={18} color="#a2f5a5" />
+                      ) : (
+                        <Ionicons name="checkmark" size={18} color="#fff" />
+                      )
+                    )}
+                  </>
+                )}
+              </View>
+            )}
+          </View>
         </View>
       </View>
     );
   };
 
-  // ==================== RENDU PRINCIPAL ====================
+  if (messagesLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Chargement des messages...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
-      style={styles.clavier}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <ImageBackground
         source={require("../../../../assets/images/asmay-icon.png")}
         resizeMode="cover"
-        style={styles.container}
+        style={styles.background}
       >
-           <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.navigate("/(main)/(asmay)/message")}>
-              <Ionicons      
-                              name={"arrow-back"} 
-                              size={24} 
-                             color={"white"} 
-                             style={styles.backButton}
-                          />
+        <BannerAd ref={bannerRef} unitId={adUnitId} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.replace("/(main)/(asmay)/message")} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-            {/*  BOUTON APPEL VIDÉO */}
-          {/* <TouchableOpacity 
-            style={styles.callButton}
-            onPress={startVideoCall}
-            disabled={!streamClient}
-          >
-             <Ionicons      
-                              name={"call"} 
-                              size={24} 
-                             color={"white"} 
-                          />
-          </TouchableOpacity> */}
+          
+          {otherUser && (
+            <TouchableOpacity 
+              style={styles.headerInfo} 
+              onPress={() => handleOpenProfile(otherUser._id)}
+            >
+              {otherUser.profilePicture ? (
+                <Image source={{ uri: otherUser.profilePicture }} style={styles.headerAvatar} />
+              ) : (
+                <View style={styles.headerAvatarPlaceholder}>
+                  <Text style={styles.headerAvatarText}>
+                    {otherUser.username?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerUsername}>{otherUser.username}</Text>
+                <Text style={[styles.headerStatus, otherUserOnline && styles.headerStatusOnline]}>
+                  {otherUserOnline ? 'En ligne' : getLastActiveText(otherUser.lastActive)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
+
         {/* Liste des messages */}
         <FlatList
           ref={flatListRef}
@@ -789,95 +637,118 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messagesList}
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          keyboardDismissMode="interactive"
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Aucun message</Text>
-              <Text style={styles.emptySubtext}>
-                Envoyez le premier message !
-              </Text>
+              <Text style={styles.emptySubtext}>Envoyez le premier message !</Text>
             </View>
           }
         />
 
-        {/* Overlay d'enregistrement vocal */}
-        {isRecordingUI && (
-          <View style={styles.recordingOverlay} 
-          >
-            <TouchableOpacity style={styles.recordingBox} onPress={handlePressOut}>
+   {/* MODAL D'ENREGISTREMENT VOCAL */}
+        <Modal
+          visible={isRecordingModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={cancelRecording}
+        >
+          <View style={styles.recordingModalOverlay}>
+            <View style={styles.recordingModalContainer}>
+              {/* Indicateur d'enregistrement */}
               <View style={styles.recordingIndicator}>
                 <View style={styles.recordingDot} />
-                <Text style={styles.recordingText}>
-                  Enregistrement en cours...
-                </Text>
+                <Text style={styles.recordingTitle}>Enregistrement vocal</Text>
               </View>
-                  <Ionicons name="recording" color={"#396902ff"} size={40} />
-              <Text style={styles.recordingTime}>
+
+              {/* Animation de vague sonore */}
+              <View style={styles.waveAnimationContainer}>
+                {[...Array(5)].map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.waveBar,
+                      {
+                        height: 30 + Math.sin(Date.now() / 300 + i) * 20,
+                        animationDelay: `${i * 0.1}s`,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {/* Timer */}
+              <Text style={styles.recordingTimer}>
                 {Math.floor(recordingDuration / 1000)}s
               </Text>
-              <Text style={styles.recordingHint}>Cliquez pour envoyer</Text>
-            </TouchableOpacity>
+
+              {/* Instructions */}
+              <Text style={styles.recordingHint}>
+               J'aime le vocal  
+              </Text>
+
+              {/* Boutons */}
+              <View style={styles.recordingButtons}>
+                <TouchableOpacity
+                  style={[styles.recordingButton, styles.cancelButton]}
+                  onPress={cancelRecording}
+                >
+                  <Ionicons name="close" size={28} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.recordingButton, styles.sendVocalButton]}
+                  onPress={stopRecording}
+                >
+                  <Ionicons name="send" size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        )}
+        </Modal>
+
+
+        {/* Modal profil public */}
+        <Modal
+          visible={isUserProfileVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={handleCloseProfile}
+        >
+          <View style={styles.modalContainer}>
+            {selectedUserId && (
+              <PublicProfileScreen userId={selectedUserId} onClose={handleCloseProfile} />
+            )}
+          </View>
+        </Modal>
 
         {/* Zone de saisie */}
         <View style={styles.inputContainer}>
-          {/* Bouton microphone */}
           <TouchableOpacity
-            onPress={handlePressIn}
-            touchSoundDisabled={false}
-            delayLongPress={300}
-            style={[
-              styles.micButton,
-              (isRecording || isRecordingUI) && styles.micButtonActive,
-            ]}
-            activeOpacity={0.7}
+            onPress={openRecordingModal}
+            style={[styles.micButton, isRecordingModalVisible && styles.micButtonActive]}
           >
-            <Text
-              style={[
-                styles.micIcon,
-                (isRecording || isRecordingUI) && styles.micIconActive,
-              ]}
-            >
-            <Ionicons      
-                  name={"mic"} 
-                  size={26} 
-                    color={"#f0ecebff"} 
-                          />
-            </Text>
+            <Ionicons name="mic" size={24} color="#fff" />
           </TouchableOpacity>
 
-          {/* Champ de texte */}
           <Input
-            placeholder="Tapez votre Asmay..."
+            placeholder="Tapez votre message..."
             style={styles.input}
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
             maxLength={500}
-            onFocus={scrollToBottom}
           />
 
-          {/* Bouton d'envoi texte */}
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!newMessage.trim() || isSending) && styles.disabled,
-            ]}
+            style={[styles.sendTextButton, (!newMessage.trim() || isSendingLocal) && styles.disabled]}
             onPress={sendMessage}
-            disabled={!newMessage.trim() || isSending}
+            disabled={!newMessage.trim() || isSendingLocal}
           >
-            {isSending ? (
+            {isSendingLocal ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-               <Ionicons      
-                              name={"send"} 
-                              size={24} 
-                             color={"white"} 
-
-                          />
+              <Ionicons name="send" size={20} color="#fff" />
             )}
           </TouchableOpacity>
         </View>
@@ -886,122 +757,147 @@ export default function ChatScreen() {
   );
 }
 
-// ==================== STYLES ====================
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop:40,
-    backgroundColor:"#203447ff",
   },
-  center: {
+  background: {
+    flex: 1,
+    backgroundColor: "#203447ff",
+  },
+  centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#203447ff",
   },
-    
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    // backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#e0e0e0',
+  loadingText: {
+    color: "#fff",
+    marginTop: 10,
+    fontSize: 16,
   },
-  backButton: {
-    fontSize: 24,
-  },
-  headerCenter: {
+  modalContainer: {
     flex: 1,
-    marginLeft: 12,
+    backgroundColor: '#203447ff',
   },
-  callButton: {
-    backgroundColor: '#3f9e07ff',
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingTop: 5,
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  headerButton: {
+    padding: 8,
+  },
+  headerInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  headerAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
-  callIcon: {
-    fontSize: 20,
-    color: '#fff',
-  },
-  image: {
-    height: 60,
-    width: 60,
-    borderRadius:30,
-    position: "absolute",
-    right: 0,
-    top: 6,
-    left: 186,
-  },imag:{
-   height: 60,
-    width: 60,
-    backgroundColor:"#6769e7ff",
-    color:"#fff",
-textAlign:"center",
-textAlignVertical:"center",
-padding:"auto",
-    borderRadius:30,
-    position: "absolute",
-    fontSize:25,
-    fontWeight:"bold",
-    right: 0,
-    top: 6,
-    left: 186,
-  },
-  empty: {
-    flex: 1,
+  headerAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#007bff",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 50,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
-  emptyText: {
-    fontSize: 20,
+  headerAvatarText: {
     color: "#fff",
-    fontWeight:"bold"
+    fontSize: 18,
+    fontWeight: "bold",
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: "#d6c8c8ff",
-    marginTop: 5,
+  headerTextContainer: {
+    marginLeft: 12,
+  },
+  headerUsername: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  headerStatus: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 2,
+  },
+  headerStatusOnline: {
+    color: "#4CAF50",
+    fontWeight: "600",
   },
   messagesList: {
-    padding: 30,
+    padding: 16,
     paddingBottom: 20,
+    flexGrow: 1,
   },
-  messageContainer: {
-    width: "85%",
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 8,
+  messageRow: {
+    flexDirection: "row",
+    marginBottom: 12,
+    alignItems: "flex-end",
+    maxWidth: "90%",
   },
-  myMessage: {
+  myMessageRow: {
     alignSelf: "flex-end",
-    backgroundColor: "#3a5879ff",
-    borderBottomRightRadius: 0,
-    borderTopLeftRadius: 0,
-    elevation: 30,
   },
-  theirMessage: {
+  theirMessageRow: {
     alignSelf: "flex-start",
-    backgroundColor: "#ffffffff",
-    borderBottomLeftRadius: 0,
-    borderTopRightRadius: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 30,
+  },
+  avatarContainer: {
+    marginHorizontal: 8,
+    alignSelf: "flex-end",
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#007bff",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  messageBubble: {
+    padding: 12,
+    borderRadius: 18,
+    maxWidth: "85%",
+    minWidth: 80,
+  },
+  myMessageBubble: {
+    backgroundColor: "#3a5879ff",
+    borderBottomRightRadius: 4,
+  },
+  theirMessageBubble: {
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 4,
   },
   messageError: {
-    backgroundColor: "#ffebee",
-    borderColor: "#f44336",
     borderWidth: 1,
+    borderColor: "#f44336",
+    opacity: 0.8,
   },
   senderName: {
     fontSize: 12,
@@ -1010,14 +906,9 @@ padding:"auto",
     fontWeight: "500",
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#000",
     lineHeight: 20,
-    maxWidth:190
-  },
-  clavier: {
-    flex: 1,
-    bottom:0
   },
   myMessageText: {
     color: "#fff",
@@ -1026,181 +917,107 @@ padding:"auto",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
   },
   time: {
     fontSize: 10,
     color: "#666",
   },
   myTime: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "rgba(255,255,255,0.7)",
   },
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginLeft: 8,
-  },
-  retryText: {
-    fontSize: 14,
-    color: "#f44336",
+    gap: 4,
   },
   inputContainer: {
     flexDirection: "row",
     padding: 10,
     alignItems: "center",
     backgroundColor: "#203447ff",
-    // borderTopWidth: 1,
-    // borderTopColor: "#e0e0e0",
-    paddingBottom: Platform.OS === "ios" ? 10 : 10,
+    borderTopWidth: 1,
+    borderTopColor: "#39434eff",
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#007bff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
+  micButtonActive: {
+    backgroundColor: "#ff4444",
   },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 90,
-    minWidth: 200,
-    maxWidth: 225,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    color:"white",
-    borderRadius: 22,
+    top:5,
+    minHeight: 45,
+    maxHeight: 300,
+    maxWidth:230,
+    minWidth:200,
+    backgroundColor: "#fff",
+    borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === "ios" ? 12 : 10,
-    marginRight: 10,
-    marginTop: 10,
-    backgroundColor: "transparent",
-    fontSize: 16,
-    fontWeight:"bold",
-    elevation: 4,
+    paddingVertical: 8,
+    marginRight: 8,
+    fontSize: 14,
+    color: "#333",
+    zIndex:100
   },
-  sendButton: {
-    backgroundColor: "#007bff",
-    width: 46,
-    height: 46,
+  sendTextButton: {
+    width: 44,
+    height: 44,
     borderRadius: 22,
-    // borderWidth:1,
-    borderColor:"#fff",
+    backgroundColor: "#007bff",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -4,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    borderWidth: 1,
+    borderColor: "#fff",
   },
   disabled: {
     backgroundColor: "#457a78ff",
+    opacity: 0.5,
   },
-  sendText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    transform: [{ rotate: "0deg" }],
-  },
-  // Styles pour les messages vocaux
-  voiceMessageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 0,
-    // backgroundColor:"#26163bff",
-    width: "70%",
-    height: 50,
-  },
-  voiceIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  myVoiceIcon: {
-    color: "#fff",
-  },
-  voiceMessageInfo: {
+  emptyContainer: {
     flex: 1,
-  },
-  voiceMessageText: {
-    fontSize: 16,
-    color: "#000",
-    fontWeight: "500",
-  },
-  myVoiceMessageText: {
-    color: "#fff",
-  },
-  voiceDuration: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
-  },
-  myVoiceDuration: {
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-  // Styles pour l'enregistrement
-  micButton: {
-    padding: 10,
-    borderRadius: 34,
-    borderWidth:1,
-    borderColor:"#e7e4e4ff",
-    backgroundColor: "transparent",
-    marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
-    minWidth: 28,
-    minHeight: 28,
-    elevation: 3,
+    paddingVertical: 50,
   },
-  micButtonActive: {
-    backgroundColor: "#ffebee",
-  },
-  micIcon: {
-    fontSize: 20,
-  },
-  micIconActive: {
-    color: "#FF3B30",
-  },
-  recordingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  recordingBox: {
-    backgroundColor: "#fff",
-    borderTopRightRadius: 75,
-    borderBottomLeftRadius: 75,
-    borderTopLeftRadius:45,
-    borderWidth:2,
-    borderColor:"#118502ff",
-    padding: 24,
-    alignItems: "center",
-    width: 280,
-    elevation: 10,
-  },
-  recordingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  recordingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#FF3B30",
-    marginRight: 10,
-  },
-  recordingText: {
+  emptyText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-  },
-  recordingTime: {
-    fontSize: 36,
     fontWeight: "bold",
-    color: "#FF3B30",
-    marginVertical: 12,
+    color: "#fff",
+    marginBottom: 8,
   },
-  recordingHint: {
+  emptySubtext: {
     fontSize: 14,
-    color: "#666",
+    color: "#d6c8c8ff",
     textAlign: "center",
-    fontStyle: "italic",
   },
+   //  Styles pour le Modal d'enregistrement
+  recordingModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
+  recordingModalContainer: { backgroundColor: "#203447ff", borderRadius: 30, padding: 30, alignItems: "center", width: SCREEN_WIDTH * 0.85, borderWidth: 2, borderColor: "#118502ff" },
+  recordingIndicator: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  recordingDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: "#ff4444", marginRight: 10 },
+  recordingTitle: { fontSize: 18, fontWeight: "bold", color: "#fff" },
+  waveAnimationContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", height: 80, marginBottom: 20, gap: 8 },
+  waveBar: { width: 6, backgroundColor: "#4CAF50", borderRadius: 3, minHeight: 20 },
+  recordingTimer: { fontSize: 48, fontWeight: "bold", color: "#ff4444", marginVertical: 20 },
+  recordingHint: { fontSize: 14, color: "#aaa", textAlign: "center", marginBottom: 20 },
+  recordingButtons: { flexDirection: "row", justifyContent: "space-between", width: "80%", gap: 15 },
+  recordingButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 25, gap: 8 },
+  cancelButton: { backgroundColor: "#dc3545" },
+  sendVocalButton: { backgroundColor: "#28a745" },
+  recordingButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  recordingOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center", zIndex: 1000 },
+  recordingBox: { backgroundColor: "#fff", borderRadius: 20, padding: 30, alignItems: "center", width: SCREEN_WIDTH * 0.8, borderWidth: 2, borderColor: "#118502ff" },
+  recordingText: { fontSize: 16, fontWeight: "600", color: "#333" },
+  recordingTime: { fontSize: 48, fontWeight: "bold", color: "#ff4444", marginVertical: 20 },
 });

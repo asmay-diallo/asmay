@@ -108,6 +108,7 @@ export interface SignalResponse {
 }
 
 export const authAPI = {
+  
   register: (data: {
     username: string;
     email: string;
@@ -125,6 +126,15 @@ export const authAPI = {
   }) => api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', data),
 
   logout: () => api.post<ApiResponse<void>>('/auth/logout'),
+    sendVerification: (email:string, username:string) => 
+    api.post('/auth/send-verification', { email, username }),
+    
+  verifyCode: (email:string, code:any) => 
+    api.post('/auth/verify-code', { email, code }),
+    
+  resendCode: (email:string, username:string) => 
+    api.post('/auth/resend-code', { email, username }),
+
 };
 // User Api 
 export const userAPI = {
@@ -176,7 +186,7 @@ export const userAPI = {
       getStreamToken: () => 
     api.get<ApiResponse<{ token: string; streamUser: any }>>('/users/stream-token'),
   
-  // Optionnel : Initier un appel vidéo
+  // Initier un appel vidéo
   initiateCall: (targetUserId: string) =>
     api.post<ApiResponse<{ callId: string }>>('/users/initiate-call', { targetUserId }),
 
@@ -208,9 +218,14 @@ export const chatAPI = {
   getChats: () => 
     api.get<ChatsResponse>('/chats'),
   
-  getMessages: (chatId: string) => 
-    api.get<MessagesResponse>(`/chats/${chatId}/messages`),
-  
+  // getMessages: (chatId: string) => 
+  //   api.get<MessagesResponse>(`/chats/${chatId}/messages`),
+  // 
+    getMessages: async (chatId: string) => {
+    const response = await api.get(`/chats/${chatId}/messages`);
+   
+    return response;
+  },
   sendMessage: (chatId: string, content: string) => 
     api.post<SingleMessageResponse>(`/chats/${chatId}/messages`, { content }),
   

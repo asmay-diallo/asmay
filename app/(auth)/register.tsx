@@ -6,20 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
-  ScrollView,
 } from "react-native";
-import { useAuth } from "../../hooks/useAuth";
 import { authAPI } from "../../services/api";
-import { storeToken, storeUserData,saveUserData } from "../../services/auth";
+import { saveUserData } from "../../services/auth";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
-import { useRouter } from "expo-router";
+import {  useRouter, useLocalSearchParams  } from "expo-router";
 import * as Location from "expo-location";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import  NetInfo  from "@react-native-community/netinfo";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 interface FormData {
@@ -56,12 +52,24 @@ export default function RegisterScreen() {
   const [passwordLock2,setPasswordLock2] = useState(true)
 
   const router = useRouter();
+   const { email: verifiedEmail, username: verifiedUsername, verified } = useLocalSearchParams();
+  
 
   // Récupérer la localisation au chargement du composant
   useEffect(() => {
     // cleanOldAuthData();
     getCurrentLocation();
   }, []);
+    useEffect(() => {
+    if (verifiedEmail && verifiedUsername) {
+      setFormData(prev => ({
+        ...prev,
+        email: verifiedEmail as string,
+        username: verifiedUsername as string,
+      }));
+    }
+  }, [verifiedEmail, verifiedUsername]);
+
  useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       console.log(state)
@@ -240,21 +248,46 @@ export default function RegisterScreen() {
 //   };
 
 
-const cleanOldAuthData = async () => {
-  console.log('🧹 Nettoyage anciennes données auth...');
-  await AsyncStorage.multiRemove([
-    'token', 
-    'user', 
-    'auth_token', 
-    'user_data',
-    'auth_user',
-    'auth_token_key'
-  ]);
-  console.log('✅ Anciennes données supprimées');
-};
+  const handleRequestVerification = async () => {
+    if (!formData.username || !formData.email) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
 
+    // Validation rapide de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      Alert.alert('Erreur', 'Email invalide');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await authAPI.sendVerification(formData.email, formData.username);
+      
+      if (response.data.success) {
+        router.push({
+          pathname: "/(auth)/verify",
+          params: { 
+            email: formData.email, 
+            username: formData.username 
+          }
+        });
+      }
+    } catch (error: any) {
+      Alert.alert('Erreur', error.response?.data?.message || 'Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 const handleRegister = async () => {
+    // Si l'email n'est pas vérifié, on passe par la vérification
+    if (verified !== 'true') {
+      handleRequestVerification();
+      return;
+    }
+    // sinon on passe à l'inscription
     const {
       username,
       email,
@@ -330,7 +363,7 @@ const handleRegister = async () => {
         if (token && user) {
           console.log("💾 Sauvegarde des données locales...");
           
-          // 4. Sauvegarder LOCALEMENT (pas d'appel API)
+          // 4. Sauvegarder LOCALEMENT (dans AsyncStorege)
           await saveUserData(user, token);
           
           console.log("✅ Données sauvegardées, redirection...");
@@ -443,6 +476,8 @@ if (!networkConnected) {
           <Text style={styles.locationText}>En attente de localisation...</Text>
         )}
       </View>
+      { verified ==="true" ? (
+        <>
       <Input
         placeholder="Nom d'utilisateur*"
         value={formData.username}
@@ -486,7 +521,30 @@ if (!networkConnected) {
         disabled={isLoading || locationLoading || formData.latitude === 0}
         loading={isLoading}
       />
-
+      </> ) :(
+         <> 
+                <Input
+          placeholder="Nom d'utilisateur*"
+          value={formData.username}
+          onChangeText={(text) => updateFormData("username", text)}
+        />
+        <Input
+          placeholder="Address email*"
+          value={formData.email}
+          onChangeText={(text) => updateFormData("email", text)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        
+        <Button
+          title={isLoading ? "Envoi..." : "Continuer"}
+          onPress={handleRequestVerification}
+          disabled={isLoading || !formData.username || !formData.email}
+          loading={isLoading}
+        />
+          </> )
+      }
+      
       <TouchableOpacity onPress={() => router.back()}>
         <Text style={styles.link}>Vous avez déja un compte ? Se connecter</Text>
       </TouchableOpacity>

@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,294 +9,224 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  TextInput,
-  Alert,
   Image,
-  Platform,
   ImageBackground,
 } from "react-native";
-import {
-  BannerAd,
-  BannerAdSize,
-  TestIds,
-  useForeground,
-} from "react-native-google-mobile-ads";
-import  NetInfo from "@react-native-community/netinfo";
+import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
+import NetInfo from "@react-native-community/netinfo";
 import { useRouter } from "expo-router";
-import { chatAPI } from "../../../services/api";
-import {useAuth} from "../../../hooks/useAuth"
-import { useSocket } from "../../../hooks/useSocket";
-import { Chat } from "../../../types";
-import Input from "@/components/Input";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-//--------------------- EN PRODUCTION -----------------//
+// Hooks Redux
+import { useChats } from "../../../hooks/useChats";
+import { useAuth } from "../../../hooks/useAuth";
+import { useSocket } from "../../../hooks/useSocket";
 
-// const adUnitId = Platform.select({
-//   ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/aaaaaaaaaa', //  Ad Unit ID pour iOS
-//   android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb', // Ad Unit ID pour Android
-// });
+// Components
+import Input from "@/components/Input";
 
+// Configuration publicitaire
 const adUnitId = __DEV__
   ? TestIds.ADAPTIVE_BANNER
   : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
 
 export default function MessagesScreen() {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [networkConnected,setNetworkConnected] = useState<boolean>(false)
-
-  const { user } = useAuth();
   const router = useRouter();
-  const { socket, isConnected } = useSocket();
+  const { user } = useAuth();
+  const { onlineUsers } = useSocket();
   const bannerRef = useRef<BannerAd>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      // console.log("🔄 Focus sur l'écran - Chargement des notifications");
-      loadChats();
-    }, [])
-  );
+  // Hook Redux pour les chats
+  const { 
+    chats, 
+    loading, 
+    loadChats, 
+    getOtherUser, 
+    getLastMessageTime, 
+    unreadCount: globalUnreadCount,
+    getChatUnreadCount,
+    markAsRead
+  } = useChats();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [networkConnected, setNetworkConnected] = useState(true);
+
+  // Vérifier connexion réseau
   useEffect(() => {
-        const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
-          console.log('Etat de connexion : ',state);
-          
-          const isNowConnected = !!state.isConnected;
-          setNetworkConnected(isNowConnected);
-    
-          if (isNowConnected) {
-            
-            // console.log("🌐 Connexion rétablie - Traitement de la file...");
-            // processRewardQueue().then((successCount) => {
-            //   if (successCount > 0) {
-            //     console.log(`✅ ${successCount} récompense(s) synchronisées`);
-              }
-            });
-          
-      
-        return () => unsubscribeNetInfo();
-      }, []);
-  
-  useEffect(() => {
-    // loadChats();
-    setupSocketListeners();
-
-    return () => {
-      if (socket) {
-        socket.off("new_message");
-        socket.off("chat_updated");
-      }
-    };
-  }, [socket]);
-
-  useForeground(() => {
-    Platform.OS === "ios" && bannerRef.current?.load();
-  });
- 
-    
-  const loadChats = useCallback(async () => {
-
-    try {
-      console.log(" Chargement des chats...");
-      const response = await chatAPI.getChats();
-
-      if (response.data.success && response.data.data) {
-        const chatsData = response.data.data; //  data contient les chats
-        console.log(` ${chatsData.length} chats chargés`);
-        setChats(chatsData);
-      } else {
-        throw new Error(
-          response.data.message || "Erreur de chargement des conversations"
-        );
-      }
-    } catch (error) {
-      // console.error("❌ Erreur chargement chats:", error);
-      // Alert.alert("Erreur", "Impossible de charger les conversations");
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setNetworkConnected(!!state.isConnected);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const setupSocketListeners = () => {
-    if (!socket) return;
-
-    // Nouveau message reçu
-    socket.on("new_message", (messageData: any) => {
-      console.log("📨 Nouveau message pour mise à jour liste:", messageData);
-
-      setChats((prevChats) => {
-        const chatIndex = prevChats.findIndex(
-          (chat) =>
-            chat._id === messageData.chat || chat._id === messageData.chatId
-        );
-
-        if (chatIndex > -1) {
-          const updatedChats = [...prevChats];
-          updatedChats[chatIndex] = {
-            ...updatedChats[chatIndex],
-            lastActivity: messageData.createdAt,
-            lastMessage: messageData.content,
-          };
-
-          // Déplacer en haut
-          const [updatedChat] = updatedChats.splice(chatIndex, 1);
-          return [updatedChat, ...updatedChats];
-        }
-
-        // Si nouveau chat, recharger
-        loadChats();
-        return prevChats;
-      });
-    });
-
-    // Chat mis à jour
-    socket.on("chat_updated", (chatData: Chat) => {
-      console.log("🔄 Chat mis à jour:", chatData);
-      setChats((prev) => {
-        const index = prev.findIndex((chat) => chat._id === chatData._id);
-        if (index > -1) {
-          const updated = [...prev];
-          updated[index] = chatData;
-          return updated;
-        }
-        return [chatData, ...prev];
-      });
-    });
-  };
+  // Recharger au focus
+  useFocusEffect(
+    useCallback(() => {
+      loadChats();
+    }, [loadChats])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadChats();
+    loadChats().finally(() => setRefreshing(false));
   };
 
-  const getOtherUser = (chat: Chat) => {
-    if (!user) return null;
-    // Adapter selon  structure
-    return chat.participant1?._id === user._id
-      ? chat.participant2
-      : chat.participant1;
+  const formatTime = (timestamp: string): string => {
+    return getLastMessageTime(timestamp);
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const isUserOnline = (userId: string): boolean => {
+    return onlineUsers?.includes(userId) || false;
+  };
+
+  const getLastActiveText = (lastActive?: string | Date): string => {
+    if (!lastActive) return 'Hors ligne';
+    
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = diff / (1000 * 60 * 60);
-
-    if (hours < 1) return "Maintenant";
-    if (hours < 24) return `${Math.floor(hours)} H`;
-    if (hours < 48) return "Hier";
-    return date.toLocaleDateString();
+    const lastActiveDate = new Date(lastActive);
+    const diffMs = now.getTime() - lastActiveDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'En ligne';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `Il y a ${diffDays} j`;
   };
 
   const filteredChats = chats.filter((chat) => {
     if (!searchQuery.trim()) return true;
     const otherUser = getOtherUser(chat);
-    return otherUser?.username
-      ?.toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    if (otherUser && typeof otherUser === 'object') {
+      return otherUser.username?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return false;
   });
 
-  const renderChatItem = ({ item }: { item: Chat }) => {
+  const renderChatItem = ({ item }: { item: any }) => {
     const otherUser = getOtherUser(item);
-    if (!otherUser) return null;
+    if (!otherUser || typeof otherUser !== 'object') return null;
 
+    const online = isUserOnline(otherUser._id);
+    const lastActiveText = getLastActiveText(otherUser.lastActive);
+    
+    // 🔥 Utiliser getChatUnreadCount pour obtenir le vrai compteur
+    const chatUnreadCount = getChatUnreadCount(item._id);
+      console.log("Chat unreadCount : ",chatUnreadCount);
+      
+  const lastMessage = item.lastMessage || "Démarrer la conversation";
+      
     return (
       <TouchableOpacity
         style={styles.chatItem}
-        onPress={() => router.push(`/(main)/(asmay)/chat/${item._id}`)}
+        onPress={() => {
+          // Marquer comme lu avant de naviguer
+          markAsRead(item._id);
+          router.push(`/(main)/(asmay)/chat/${item._id}`);
+        }}
+        activeOpacity={0.7}
       >
-        {otherUser.profilePicture ? (
-          <Image
-            source={{ uri: otherUser.profilePicture }}
-            style={styles.image}
-          />
-        ) : (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {otherUser.username?.charAt(0)?.toUpperCase() || "?"}
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.chatInfo}>
-          <Text style={styles.username}>{otherUser.username}</Text>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage || "Démarrer la conversation"}
-          </Text>
-          <View style={styles.interests}>
-            {otherUser.interests?.slice(0, 2).map((interest, idx) => (
-              <Text key={idx} style={styles.interestTag}>
-                {interest}
+        <View style={styles.avatarWrapper}>
+          {otherUser.profilePicture ? (
+            <Image source={{ uri: otherUser.profilePicture }} style={styles.image} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {otherUser.username?.charAt(0)?.toUpperCase() || "?"}
               </Text>
-            ))}
-          </View>
+            </View>
+          )}
+          <View style={[styles.statusDot, online ? styles.online : styles.offline]} />
         </View>
 
-        <Text style={styles.time}>{formatTime(item.lastActivity)}</Text>
+        <View style={styles.chatInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.username} numberOfLines={1}>
+              {otherUser.username}
+            </Text>
+            <Text style={[styles.statusText, online && styles.onlineText]}>
+              {online ? "● En ligne" : lastActiveText}
+            </Text>
+          </View>
+          <Text style={styles.lastMessage} numberOfLines={1}>
+            {lastMessage || "Démarrer la conversation"}
+          </Text>
+          {otherUser.interests && otherUser.interests.length > 0 && (
+            <View style={styles.interests}>
+              {otherUser.interests.slice(0, 2).map((interest: string, idx: number) => (
+                <Text key={idx} style={styles.interestTag}>
+                  {interest}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.rightContainer}>
+          <Text style={styles.time}>{formatTime(item.lastActivity)}</Text>
+          
+          {/* 🔥 Afficher le badge avec le vrai compteur */}
+          {chatUnreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>
+                {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
 
-  if (isLoading) {
+  if (!networkConnected) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text>Chargement des conversations...</Text>
+      <View style={styles.centerContainer}>
+        <Ionicons name="cloud-offline" size={70} color="#fff" />
+        <Text style={styles.loadingTitle}>Aucune connexion internet</Text>
+        <Text style={styles.loadingText}>Vérifiez votre connexion</Text>
       </View>
     );
   }
-if (!networkConnected) {
-     return (
-        <View style={styles.centerContainer}>
-            <Ionicons
-           name="cloud-offline"
-           size={70}
-           color={"rgb(249, 244, 244)"}
-          />
-          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
-          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-        </View>
-      );
- }
 
-  
+  if (loading && chats.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Chargement des messages...</Text>
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
-     source={require("../../../assets/images/asmay-home.png")}
+      source={require("../../../assets/images/asmay-home.png")}
       resizeMode="cover"
-    style={styles.container}>
-      {/* <ImageBackground style={styles.header}>
-        {/* <Text style={styles.title}>Chats</Text> */}
-      {/* <View
-          style={[
-            styles.connection,
-            isConnected ? styles.online : styles.offline,
-          ]}
-        >
-          <Text style={styles.connectionText}>
-            {isConnected ? "En ligne" : "Hors ligne"}
-          </Text>
-        </View>
+      style={styles.container}
+    >
+      {/* Header avec badge global */}
+      {/* <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Messages</Text>
+        {globalUnreadCount > 0 && (
+          <View style={styles.globalBadge}>
+            <Text style={styles.globalBadgeText}>
+              {globalUnreadCount > 99 ? '99+' : globalUnreadCount}
+            </Text>
+          </View>
+        )}
       </View> */}
 
       <Input
         style={styles.search}
-        placeholder="🔍 Recherche..."
+        placeholder="🔍 Rechercher..."
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-      {/* <Ionicons 
-                           name={"search"} 
-                           size={24} 
-                           color={"red"} 
-                         /> */}
+
       <FlatList
         data={filteredChats}
         renderItem={renderChatItem}
@@ -307,153 +238,218 @@ if (!networkConnected) {
           <View style={styles.empty}>
             <Text style={styles.emptyText}>Aucune conversation</Text>
             <Text style={styles.emptySub}>
-              Envoyez des signaux à des persnnes proches sur Asmay pour
-              commencer à chatter
+              Envoyez des signaux à des personnes proches pour commencer à chatter
             </Text>
-            <Ionicons 
-            name="clipboard-outline"
-             size={80}
-             color={"rgb(252, 250, 250)"}
-              style={styles.iconEmpty}
-             />
+            <Ionicons name="chatbubble-outline" size={80} color="#fff" style={styles.iconEmpty} />
           </View>
         }
+        showsVerticalScrollIndicator={false}
       />
-      <BannerAd
-        ref={bannerRef}
-        unitId={adUnitId}
-        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+      
+      <BannerAd 
+        ref={bannerRef} 
+        unitId={adUnitId} 
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
       />
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#203447ff",
-    paddingTop: 40,
+  container: { 
+    flex: 1, 
+    backgroundColor: "#203447ff", 
+    paddingTop: 40 
   },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+  centerContainer: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    backgroundColor: "#030914ff" 
   },
-  iconEmpty:{
-  top:10
-  }
-,  centerContainer: {
-    flex: 1,
-    height:"100%",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#030914ff",
-    // top:-80
+  loadingTitle: { 
+    marginTop: 16, 
+    fontSize: 20, 
+    fontWeight: "bold", 
+    color: "#fff" 
   },
-   loadingTitle: {
-    marginTop: 16,
-    marginBottom:16,
-    fontSize: 20,
-    fontWeight:"bold",
-    color: "#f1efefff",
+  loadingText: { 
+    fontSize: 15, 
+    color: "#fff", 
+    marginTop: 10 
   },
-  loadingText: {
-    // marginBottom:16,
-    fontSize: 15,
-    color: "rgb(186, 184, 184)",
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(32, 52, 71, 0.9)',
   },
-  wifiBar:{
-    position:"absolute",
-    bottom:250,
-    color:"#fff",
-    fontSize:72,
-
-  }
-  ,
-  image: {
-    height: 78,
-    width: 78,
-    borderRadius: 40,
-    marginRight: 8,
-    borderColor: "#f3c222ff",
-    borderWidth: 2,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
   },
-  title: { fontSize: 24, fontWeight: "bold" },
-  connection: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-  online: { backgroundColor: "#4CAF50" },
-  offline: { backgroundColor: "#F44336" },
-  connectionText: { color: "#fff", fontSize: 12 },
-  search: {
-    backgroundColor: "transparent",
-    color: "white",
-    margin: 16,
-    padding: 12,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#ded9d9ff",
-    elevation: 8,
-  },
-  chatItem: {
-    flexDirection: "row",
-    backgroundColor: "#f2f5f7ff",
-    marginHorizontal: 16,
-    marginVertical: 4,
-    padding: 14,
+  globalBadge: {
+    backgroundColor: '#F44336',
+    minWidth: 24,
+    height: 24,
     borderRadius: 12,
-    borderLeftWidth: 6,
-    borderRightWidth: 0,
-    borderTopWidth: 5,
-    borderBottomWidth: 0,
-    alignItems: "center",
-    shadowColor: "#080808ff",
-    shadowOffset: { width: 6, height: 4 },
-    shadowOpacity: 2,
-    shadowRadius: 6,
-    borderLeftColor: "#2a75e6ff",
-    borderTopColor: "#2a75e6ff",
-    borderRightColor: "#d15a0aff",
-    borderBottomColor: "#e6502aff",
-    elevation: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#007bff",
-    justifyContent: "center",
-    alignItems: "center",
+  globalBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  search: { 
+    backgroundColor: "transparent", 
+    color: "#fff", 
+    margin: 16, 
+    padding: 12, 
+    borderRadius: 25, 
+    borderWidth: 1, 
+    borderColor: "#ded9d9ff" 
+  },
+  
+  // Avatar avec statut
+  avatarWrapper: {
+    position: 'relative',
     marginRight: 12,
   },
-  avatarText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  chatInfo: { flex: 1 },
-  username: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-  lastMessage: { fontSize: 14, color: "#666", marginBottom: 4 },
-  interests: { flexDirection: "row", flexWrap: "wrap" },
-  interestTag: {
-    fontSize: 10,
-    backgroundColor: "#e3f2fd",
-    color: "#1976d2",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginRight: 4,
+  image: { 
+    height: 60, 
+    width: 60, 
+    borderRadius: 30, 
+    borderWidth: 2, 
+    borderColor: "#f3c222ff" 
   },
-  time: { fontSize: 12, color: "#999" },
-  empty: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 40,
-    top:90
+  avatar: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    backgroundColor: "#007bff", 
+    justifyContent: "center", 
+    alignItems: "center" 
   },
-  emptyText: {
-    fontSize: 18,
+  avatarText: { 
+    color: "#fff", 
+    fontSize: 24, 
+    fontWeight: "bold" 
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  online: {
+    backgroundColor: '#4CAF50',
+  },
+  offline: {
+    backgroundColor: '#9e9e9e',
+  },
+
+  chatItem: { 
+    flexDirection: "row", 
+    backgroundColor: "#fff", 
+    marginHorizontal: 16, 
+    marginVertical: 4, 
+    padding: 12, 
+    borderRadius: 12, 
+    alignItems: "center", 
+    elevation: 3 
+  },
+  chatInfo: { 
+    flex: 1 
+  },
+  nameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  username: { 
+    fontSize: 16, 
     fontWeight: "bold",
-    color: "white",
-    marginBottom: 8,
+    flex: 1,
   },
-  emptySub: { fontSize: 14, color: "#f3efefff", textAlign: "center" },
+  statusText: {
+    fontSize: 11,
+    color: '#666',
+    marginLeft: 8,
+  },
+  onlineText: {
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  lastMessage: { 
+    fontSize: 13, 
+    color: "#666", 
+    marginBottom: 4 
+  },
+  interests: { 
+    flexDirection: "row", 
+    flexWrap: "wrap" 
+  },
+  interestTag: { 
+    fontSize: 10, 
+    backgroundColor: "#e3f2fd", 
+    color: "#1976d2", 
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    borderRadius: 8, 
+    marginRight: 4 
+  },
+  rightContainer: {
+    alignItems: 'flex-end',
+  },
+  time: { 
+    fontSize: 11, 
+    color: "#999", 
+    marginBottom: 4 
+  },
+  unreadBadge: { 
+    backgroundColor: "#007bff", 
+    borderRadius: 12, 
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unreadText: { 
+    color: "#fff", 
+    fontSize: 10, 
+    fontWeight: "bold" 
+  },
+  empty: { 
+    alignItems: "center", 
+    justifyContent: "center", 
+    padding: 40, 
+    marginTop: 100 
+  },
+  emptyText: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#fff", 
+    marginBottom: 8 
+  },
+  emptySub: { 
+    fontSize: 14, 
+    color: "#fff", 
+    textAlign: "center", 
+    marginBottom: 20 
+  },
+  iconEmpty: { 
+    marginTop: 20 
+  },
 });
