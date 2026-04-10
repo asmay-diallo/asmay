@@ -11,43 +11,53 @@ import {
   RefreshControl,
   Image,
   ImageBackground,
+  Alert
 } from "react-native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 import NetInfo from "@react-native-community/netinfo";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useQueryClient } from '@tanstack/react-query';
+import { chatAPI } from "@/services/api";
 
 // Hooks Redux
 import { useChats } from "../../../hooks/useChats";
 import { useAuth } from "../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
+// Tanstack à impémenter 
+import { useChatsQuery, useDeleteChat, useMarkChatAsRead } from "../../../hooks/queries/useChatsQuery";
 
 // Components
 import Input from "@/components/Input";
 
 // Configuration publicitaire
-const adUnitId = __DEV__
+const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+  :process.env.ANDROID_BANNER_UNIT_ID;
 
 export default function MessagesScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { onlineUsers } = useSocket();
   const bannerRef = useRef<BannerAd>(null);
+  const queryClient =useQueryClient()
 
   // Hook Redux pour les chats
   const { 
-    chats, 
-    loading, 
-    loadChats, 
+    // chats, 
+    // loading, 
+    // loadChats, 
     getOtherUser, 
     getLastMessageTime, 
     unreadCount: globalUnreadCount,
     getChatUnreadCount,
-    markAsRead
+    // markAsRead
   } = useChats();
+    // TanStack Query à implémenter 
+  const { data: chats = [], isLoading, refetch } = useChatsQuery();
+  const { mutate: deleteChat } = useDeleteChat();
+  const { mutate: markAsRead } = useMarkChatAsRead();
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,15 +72,25 @@ export default function MessagesScreen() {
   }, []);
 
   // Recharger au focus
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     loadChats();
+  //   }, [loadChats])
+  // );
+    // Recharger au focus
   useFocusEffect(
     useCallback(() => {
-      loadChats();
-    }, [loadChats])
+      refetch();
+    }, [refetch])
   );
 
+  // const handleRefresh = () => {
+  //   setRefreshing(true);
+  //   loadChats().finally(() => setRefreshing(false));
+  // };
   const handleRefresh = () => {
     setRefreshing(true);
-    loadChats().finally(() => setRefreshing(false));
+    refetch().finally(() => setRefreshing(false));
   };
 
   const formatTime = (timestamp: string): string => {
@@ -108,6 +128,32 @@ export default function MessagesScreen() {
     return false;
   });
 
+  const deleteOneChat = async (chatId:string) =>{
+    Alert.alert("Supprimer","Voulez-vous vraiment supprimer ce chat ? ",[
+      {text:"Non",style:"cancel"},
+      {text:"Oui",style:"destructive",
+          onPress: () =>deleteChat(chatId)
+      }
+    ])
+  }
+//  const handleDeleteChat = (chatId: string) => {
+//     Alert.alert("Supprimer", "Voulez-vous vraiment supprimer ce chat ?", [
+//       { text: "Non", style: "cancel" },
+//       {
+//         text: "Oui",
+//         style: "destructive",
+//         onPress: () => deleteChat(chatId)
+//       }
+//     ]);
+//   };
+
+
+  const handleChatPress = (chatId: string) => {
+    // Marquer comme lu avant de naviguer
+    markAsRead(chatId);
+    router.push(`/(main)/(asmay)/chat/${chatId}`);
+  };
+
   const renderChatItem = ({ item }: { item: any }) => {
     const otherUser = getOtherUser(item);
     if (!otherUser || typeof otherUser !== 'object') return null;
@@ -115,7 +161,7 @@ export default function MessagesScreen() {
     const online = isUserOnline(otherUser._id);
     const lastActiveText = getLastActiveText(otherUser.lastActive);
     
-    // 🔥 Utiliser getChatUnreadCount pour obtenir le vrai compteur
+    //  Obtenir le vrai compteur
     const chatUnreadCount = getChatUnreadCount(item._id);
       console.log("Chat unreadCount : ",chatUnreadCount);
       
@@ -129,6 +175,7 @@ export default function MessagesScreen() {
           markAsRead(item._id);
           router.push(`/(main)/(asmay)/chat/${item._id}`);
         }}
+        onLongPress={()=>deleteOneChat(item._id)}
         activeOpacity={0.7}
       >
         <View style={styles.avatarWrapper}>
@@ -170,7 +217,7 @@ export default function MessagesScreen() {
         <View style={styles.rightContainer}>
           <Text style={styles.time}>{formatTime(item.lastActivity)}</Text>
           
-          {/* 🔥 Afficher le badge avec le vrai compteur */}
+          {/*  Afficher le badge avec le vrai compteur */}
           {chatUnreadCount > 0 && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadText}>
@@ -193,7 +240,7 @@ export default function MessagesScreen() {
     );
   }
 
-  if (loading && chats.length === 0) {
+  if (isLoading && chats.length === 0) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#007bff" />

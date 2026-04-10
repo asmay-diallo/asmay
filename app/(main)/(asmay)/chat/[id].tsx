@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback, } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo} from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Image,
   Dimensions,
   Modal,
+  
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -30,19 +31,23 @@ import { useSocket } from "../../../../hooks/useSocket";
 import { useAudioPlayer as useAudioPlayerHook } from "../../../../hooks/useAudioPlayer";
 import { chatAPI } from "@/services/api";
 import { receiveNewVoiceMessage, addTemporaryVoiceMessage, markVoiceMessageError, updateTemporaryVoiceMessage,receiveNewMessage,addTemporaryMessage,updateMessageStatus } from "@/store/slices/messageSlice";
+//Etats de query ====================
+// import { useMessagesQuery, useSendMessage, useDeleteMessage,useSendVoiceMessage,useMarkMessageAsRead } from '../../../../hooks/queries/useMessagesQuery';
+// import { useChatsQuery } from '../../../../hooks/queries/useChatsQuery';
 
 // Components
 import { VoiceMessagePlayer } from "../../../../components/VoiceMessagePlayer";
 import PublicProfileScreen from "../../../../components/PublicProfileScreen";
 import Input from "@/components/Input";
 import { useDispatch } from "react-redux";
+import { Message } from "@/types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Configuration publicitaire
-const adUnitId = __DEV__
+const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+  :process.env.ANDROID_BANNER_UNIT_ID;
 
 export default function ChatScreen() {
   const dispatch = useDispatch();
@@ -65,14 +70,25 @@ export default function ChatScreen() {
   
   // Hook Redux pour récupérer l'autre utilisateur
   const { chats, getOtherUser,updateInChatLastMessage } = useChats();
+
+  // //   //  TanStack Query pour les messages==============
+  // const { data: messages = [], isLoading, refetch } = useMessagesQuery(chatId);
+  // const { mutate: sendMessage, isPending: isSendingMessage } = useSendMessage(chatId);
+  // const { mutate: deleteMessage } = useDeleteMessage(chatId);
+  // const {mutate:sendVoiceMessage ,isPending:isSendingVoiceMessage }= useSendVoiceMessage(chatId)
+  // 
+  // // TanStack Query pour les chats
+  // const { data: chats = [] } = useChatsQuery();
   
   const [otherUser, setOtherUser] = useState<any>(null);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
   const [otherUserLastActive, setOtherUserLastActive] = useState<Date | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isSendingLocal, setIsSendingLocal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [userLocationPlace,setUserLocationPlace] = useState<string | undefined>(undefined)
+   const [userDistance,setUserDistance ] = useState<number | undefined>(undefined)
 
   const flatListRef = useRef<FlatList>(null);
   const bannerRef = useRef<BannerAd>(null);
@@ -93,6 +109,18 @@ export default function ChatScreen() {
   const { stopAudio } = useAudioPlayerHook();
 
   // ==================== CHARGEMENT DES INFOS DU CHAT ====================
+   // Récupérer l'autre utilisateur============
+  // const otherUser = useMemo(() => {
+  //   const currentChat = chats.find(chat => chat._id === chatId);
+  //   if (!currentChat || !user) return null;
+  //   
+  //   const participant1 = typeof currentChat.participant1 === 'object' ? currentChat.participant1 : null;
+  //   const participant2 = typeof currentChat.participant2 === 'object' ? currentChat.participant2 : null;
+  //   
+  //   if (participant1?._id === user._id) return participant2;
+  //   return participant1;
+  // }, [chats, chatId, user]);
+  // // 
  useEffect(() => {
   enterChat();
   return () => leaveChat();
@@ -123,21 +151,38 @@ useFocusEffect(
     };
     loadChatInfo();
   }, [chatId, chats, getOtherUser]);
-  // 1. Rejoindre la room du chat
+
+// 1. Rejoindre la room du chat
+
 useEffect(() => {
   if (!socket || !chatId) return;
-
-  console.log(`🔌 Socket ${socket.id} rejoint la room chat_${chatId}`);
   socket.emit("join_chat", chatId);
 
   return () => {
-    console.log(`🔌 Socket ${socket.id} quitte la room chat_${chatId}`);
     socket.emit("leave_chat", chatId);
   };
 }, [socket, chatId]);
 
 // 2. Écouter les messages en temps réel
-useEffect(() => {
+  // useEffect(() => {
+  //   if (!socket) return;
+  //   
+  //   const handleNewMessage = (messageData: Message) => {
+  //     if ((messageData.chatId === chatId ) && messageData.sender._id !== user?._id) {
+  //       refetch();
+  //     }
+  //   };
+  //   
+  //   socket.on('new_message', handleNewMessage);
+  //   socket.on('new_voice_message', handleNewMessage);
+  //   
+  //   return () => {
+  //     socket.off('new_message', handleNewMessage);
+  //     socket.off('new_voice_message', handleNewMessage);
+  //   };
+  // }, [socket, chatId, user?._id, refetch]);
+
+  useEffect(() => {
   if (!socket) return;
 
   console.log("🎧 Configuration des écouteurs socket");
@@ -192,6 +237,7 @@ useEffect(() => {
 }, [socket, chatId, user?._id, dispatch, player]);
 
   // ==================== SURVEILLANCE DU STATUT EN LIGNE ====================
+  
   useEffect(() => {
     if (otherUser?._id && onlineUsers) {
       setOtherUserOnline(onlineUsers.includes(otherUser._id));
@@ -200,7 +246,12 @@ useEffect(() => {
 
   // ==================== GESTION DU PROFIL ====================
   const handleOpenProfile = (userId: string) => {
+    //  const userDist = user.find((userItem)=>userItem._id === userId)
+    const place = user?.precision?.text
+    const distance = user?.distance
     setSelectedUserId(userId);
+    setUserLocationPlace(place)
+    setUserDistance(distance)
     setIsUserProfileVisible(true);
   };
 
@@ -210,7 +261,14 @@ useEffect(() => {
   };
 
   // ==================== ENVOI DE MESSAGE ====================
-
+ 
+  // const handleSend = () => {
+  //   if (newMessage.trim()) {
+  //     sendMessage(newMessage);
+  //     setNewMessage("");
+  //     scrollToBottom();
+  //   }
+  // };
 const sendMessage = async () => {
   const messageContent = newMessage.trim();
   if (!messageContent || isSendingLocal) return;
@@ -306,6 +364,7 @@ const sendMessage = async () => {
 };
 
   // ==================== ENREGISTREMENT VOCAL ====================
+  
   const startRecording = async () => {
     try {
       const { status } = await Audio.requestPermissionsAsync();
@@ -350,7 +409,8 @@ const sendMessage = async () => {
 
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-
+       console.log("L'Url de l'audio est :" ,uri);
+       
       if (!uri) throw new Error("Aucun URI d'audio retourné");
 
       const totalDuration = recordingDurationRef.current;
@@ -361,7 +421,7 @@ const sendMessage = async () => {
 
       const durationInSeconds = Math.floor(totalDuration / 1000);
       setIsRecordingModalVisible(false)
-      await sendVoiceMessage(uri, durationInSeconds);
+       await sendVoiceMessage(uri, durationInSeconds);
 
       setRecordingDuration(0);
       recordingDurationRef.current = 0;
@@ -460,6 +520,7 @@ const sendMessage = async () => {
   }, [chatId, user, socket, isConnected, dispatch]);
 
   // ==================== UTILITAIRES ====================
+  
   const scrollToBottom = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -482,9 +543,33 @@ const sendMessage = async () => {
     const diffDays = Math.floor(diffHours / 24);
     return `Il y a ${diffDays} j`;
   };
+  // SUPPRIMER UN MESSAGE 
+  const handleDeleteOneMessage = (chatId:string,messageId:string) =>{
+        
+    Alert.alert("Supprimer","Voulez-vous vraiment supprimer ce message ?",[
+      {text:"Non",style:"cancel"},
+      {text:"Oui",style:"destructive",
+        onPress: async() : Promise<void> =>{
+            try {
+             const response =  await chatAPI.deleteOneMessage(messageId,chatId) 
+            //  const messagefiltered = message
+             console.log("📋 Message supprimé est  : ",response.data);
+             
+             if(response.data.data && response.data.success){
+               Alert.alert("Supprimé" ,"Ce message disparaîtra dans quelques minutes ")
+              }
 
+            } catch (error:any) {
+              const msg = error.response.data.message
+              Alert.alert("Désolé", msg)
+            }
+        }
+      }
+    ])
+  }
   // ==================== RENDU DES MESSAGES ====================
   const renderMessage = ({ item }: { item: any }) => {
+    0
     if (!item?.sender) return null;
 
     const isMyMessage = item.sender._id === user?._id;
@@ -492,13 +577,18 @@ const sendMessage = async () => {
     const sending =isSendingLocal;
     
     return (
-      <View
+      <TouchableOpacity
         style={[
           styles.messageRow,
           isMyMessage ? styles.myMessageRow : styles.theirMessageRow,
         ]}
+        // onLongPress={() =>{
+        //    isMyMessage ? 
+        //    deleteMessage(item._id)
+        //    : Alert.alert("Désolé","Vous ne pouvez supprimer que votre propre message ce Chat")
+        //   }}
       >
-        <View style={styles.avatarContainer}>
+        <View style={styles.avatarContainer}> 
           {item.sender.profilePicture ? (
             <Image
               source={{ uri: item.sender.profilePicture }}
@@ -572,7 +662,7 @@ const sendMessage = async () => {
             )}
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -717,7 +807,12 @@ const sendMessage = async () => {
         >
           <View style={styles.modalContainer}>
             {selectedUserId && (
-              <PublicProfileScreen userId={selectedUserId} onClose={handleCloseProfile} />
+              <PublicProfileScreen
+               userId={selectedUserId} 
+               onClose={handleCloseProfile} 
+               userPlace={userLocationPlace}
+              userDistance={userDistance}
+              />
             )}
           </View>
         </Modal>
@@ -743,7 +838,7 @@ const sendMessage = async () => {
           <TouchableOpacity
             style={[styles.sendTextButton, (!newMessage.trim() || isSendingLocal) && styles.disabled]}
             onPress={sendMessage}
-            disabled={!newMessage.trim() || isSendingLocal}
+            // disabled={isSending}
           >
             {isSendingLocal ? (
               <ActivityIndicator size="small" color="#fff" />

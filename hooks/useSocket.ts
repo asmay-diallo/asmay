@@ -55,7 +55,8 @@ export const useSocket = () => {
       setSocket(null);
     }
 
-const socketUrl =process.env.EXPO_PUBLIC_API_URL;
+// const socketUrl =process.env.EXPO_PUBLIC_API_URL;
+const socketUrl ='http://192.168.195.123:5000'
 // process.env.EXPO_PUBLIC_API_URL ||
     
     console.log('Connexion à:', socketUrl);
@@ -106,17 +107,17 @@ const socketUrl =process.env.EXPO_PUBLIC_API_URL;
     });
 
     newSocket.on('connect_error', (error) => {
-      // console.error('❌ Erreur de connexion Socket.io:', error.message);
+      // console.error('❌Erreur de connexion Socket.io:', error.message);
       setIsConnected(false);
     });
 
     //  Écouter les confirmations d'envoi de signal
     newSocket.on('signal_sent', (data) => {
-      console.log('✅ Confirmation envoi signal:', data);
+      console.log(' Confirmation envoi signal:', data);
       // Cet événement sera utilisé dans handleSendSignal
     });
 
-    newSocket.on('signal_error', (error) => {nal
+    newSocket.on('signal_error', (error) => {
     });
 
     // 📨 Écouter les nouveaux signaux
@@ -147,7 +148,7 @@ const socketUrl =process.env.EXPO_PUBLIC_API_URL;
 
     // Écouter l'acceptation des signaux
     newSocket.on('signal_accepted', (data) => {
-      console.log('✅ Votre signal a été accepté!', data);
+      console.log(' Votre signal a été accepté!', data);
       playCorrectSound()
  
       Alert.alert(
@@ -242,7 +243,7 @@ const sendSignal = useCallback((targetUserId: string, message?: string): Promise
       reject(new Error('Timeout - Pas de réponse du serveur'));
     }, 5000);
 
-    const onSignalSent = (data: SignalResponse) => { // 🔥 TYPAGE ICI
+    const onSignalSent = (data: SignalResponse) => { 
       clearTimeout(timeout);
       socketRef.current?.off('signal_sent', onSignalSent);
       socketRef.current?.off('signal_error', onSignalError);

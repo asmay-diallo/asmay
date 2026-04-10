@@ -34,6 +34,9 @@ export interface ARUser {
     level: number;
     text: string;
     icon: string;
+    type:string,
+    shortName:string,
+    fullName:string
   };
   lastActive?: Date;
   isOnline?: boolean;
@@ -43,7 +46,7 @@ export interface UserListViewProps {
   users: ARUser[];
   isSendingSignal: string | null;
   onUserPress: (userId: string) => void;
-  currentLocation: { lat: number; lon: number };
+  currentLocation: { latitude: number; longitude: number };
   onRefresh?: () => void;
   refreshing?: boolean;
   ListHeaderComponent?: React.ReactElement;
@@ -71,6 +74,9 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   const [filteredUsers, setFilteredUsers] = useState<ARUser[]>(users);
   const [searchMode, setSearchMode] = useState<'local' | 'api'>('local');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userLocationPlace,setUserLocationPlace] = useState<string | undefined>(undefined)
+  const [userDistance,setUserDistance]= useState<number | undefined>(undefined)
+
   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
 
   // Mettre à jour le compteur en ligne
@@ -110,27 +116,30 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   };
 
   // Gestionnaire d'ouverture de profil
-  const handleOpenProfile = (userId: string) => {
+  const handleOpenProfile = (userId: string,) => {
+    const user = users.find((user)=>user._id === userId)
+    const place = user?.precision?.text
+    const distance = user?.distance
     setSelectedUserId(userId);
+    setUserLocationPlace(place)
+    setUserDistance(distance)
     setIsUserProfileVisible(true);
   };
 
   // Gestionnaire de fermeture de profil
   const handleCloseProfile = () => {
     setIsUserProfileVisible(false);
+   setUserLocationPlace(undefined)
     setSelectedUserId(null);
   };
 
-  /**
-   * Vérifier si un utilisateur est en ligne
-   */
+  //  Vérifier si un utilisateur est en ligne
+   
   const isUserOnline = (userId: string): boolean => {
     return onlineUsers?.includes(userId) || false;
   };
 
-  /**
-   * Obtient la couleur en fonction de la distance
-   */
+  //  Obtient la couleur en fonction de la distance
   const getDistanceColor = (distance: number): string => {
     if (distance <= 25) return '#FF3B30';
     if (distance <= 50) return '#FF9500';
@@ -254,6 +263,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     const isSending = isSendingSignal === user._id;
     const online = isUserOnline(user._id);
     
+    
     // Mettre en évidence les termes recherchés
     const highlightSearch = (text: string): JSX.Element => {
       if (!searchQuery || searchQuery.length < 2) {
@@ -316,7 +326,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
         <TouchableOpacity 
           style={styles.userInfo}
          onPress={() => onUserPress(user._id)}
-
         >
           {/* Nom et distance */}
           <View style={styles.nameRow}>
@@ -329,12 +338,15 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           {/* Localisation */}
           <View style={styles.locationRow}>
             <Text style={styles.locationIcon}>
-              {getPrecisionIcon(user.precision)}
+              {user.precision?.icon}
             </Text>
             <Text style={styles.locationText} numberOfLines={1}>
-              {user.precision?.text || 'À proximité'}
+             {user.precision?.fullName}
             </Text>
           </View>
+            <Text style={styles.locationText} numberOfLines={1}>
+               {user.precision?.type}
+            </Text>
 
           {/* Intérêts communs */}
           {user.interests && user.interests.count > 0 && (
@@ -455,6 +467,8 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           {selectedUserId && (
             <PublicProfileScreen 
               userId={selectedUserId} 
+              userPlace={userLocationPlace}
+              userDistance={userDistance}
               onClose={handleCloseProfile}
             />
           )}
@@ -636,7 +650,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 13,
+    fontSize: 10,
     flex: 1,
   },
   interestsContainer: {

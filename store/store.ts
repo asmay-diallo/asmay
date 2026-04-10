@@ -28,7 +28,7 @@ export type AppDispatch = typeof store.dispatch;
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'] as const,
+  whitelist: ['auth','signals','chats','messages','voiceMessages','userProfile'] as const,
 };
 
 const rootReducer = combineReducers({

@@ -39,15 +39,17 @@ interface PublicUser {
 
 interface PublicProfileScreenProps {
   userId: string;
+  userPlace:string | undefined;
+  userDistance:number | undefined;
   onClose?: () => void; // Pour fermer le modal depuis l'intérieur
 }
 
 // Configuration publicitaire
-const adUnitId = __DEV__
+const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+  : process.env.ANDROID_BANNER_UNIT_ID;
 
-export default function PublicProfileScreen({ userId, onClose }: PublicProfileScreenProps) {
+export default function PublicProfileScreen({ userId,userDistance,userPlace, onClose }: PublicProfileScreenProps) {
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const { onlineUsers } = useSocket();
@@ -236,13 +238,14 @@ export default function PublicProfileScreen({ userId, onClose }: PublicProfileSc
           <Text style={styles.status}>
             {isConnected ? '● En ligne' : formatLastActive(profile.lastActive)}
           </Text>
+           <Text style={styles.username}>{userPlace} {userDistance}</Text>
         </View>
 
         {/* Bio */}
         {profile.bio ? (
           <Text style={styles.bio}>{profile.bio}</Text>
         ) : (
-          <Text style={styles.bioEmpty}>Aucune bio</Text>
+          <Text style={styles.bioEmpty}>Aucun mot pour les Asmayiens </Text>
         )}
       </View>
 

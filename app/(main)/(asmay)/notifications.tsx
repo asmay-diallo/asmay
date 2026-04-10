@@ -37,6 +37,10 @@ import {
 } from "@/services/rewardQueu";
 import { userAPI } from "@/services/api";
 
+//  TanStack Query hooks
+import { useReceivedSignalsQuery, useAcceptSignal, useDeclineSignal, useDeleteSignal } from "../../../hooks/queries/useSignalsQuery";
+
+
 const REWARD_QUEUE_KEY = "@asmay_pending_rewards";
 const MAX_ATTEMPTS = 5;
 const BASE_DELAY = 60000; // 1 minute
@@ -72,15 +76,15 @@ interface NotificationItem extends Signal {
 // });
 
 // Configuration publicitaire
-const adUnitIdBan = __DEV__
+const adUnitIdBan:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+  : process.env.ANDROID_BANNER_UNIT_ID;
 
-const adUnitId = __DEV__
+const adUnitIdRewarded:any = __DEV__
   ? TestIds.REWARDED
-  : "ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy";
+  : process.env.ANDROID_REWARDED_AD_UNIT_ID;
 
-const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+const rewarded = RewardedAd.createForAdRequest(adUnitIdRewarded, {
   keywords: ["fashion", "clothing"],
 });
 
@@ -98,6 +102,13 @@ const NotificationsScreen: React.FC = () => {
 
   const bannerRef = useRef<BannerAd>(null);
 
+   //  TanStack Query=============
+    const { data: signals = [], isLoading, refetch } = useReceivedSignalsQuery();
+    const { mutate: acceptSignal, isPending: accepting } = useAcceptSignal();
+    const { mutate: declineSignal, isPending: declining } = useDeclineSignal();
+    const { mutate: deleteSignal } = useDeleteSignal();
+    
+    
 
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -407,14 +418,9 @@ const NotificationsScreen: React.FC = () => {
         style: "destructive",
         onPress: async (): Promise<void> => {
           try {
-            // 🔥 TEMPORAIRE: Suppression locale en attendant l'API
-            // setNotifications(prev => prev.filter(notif => notif._id !== signalId));
-
-            // 🔥 TODO: Décommenter quand l'API deleteSignal sera disponible
             await signalAPI.delete(signalId);
             showRewardedAd();
             loadNotifications();
-            // Alert.alert('Supprimé', 'Notification⚠️ supprimée');
           } catch (error) {
             // console.error('Erreur suppression:', error);
             Alert.alert("Erreur", "Impossible de supprimer");

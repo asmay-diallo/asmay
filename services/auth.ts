@@ -146,7 +146,7 @@ export const getUserData = async (): Promise<{ user: User | null; token: string 
       // Tentative de récupération depuis l'ancien format (pour migration)
       const oldUserData = await AsyncStorage.getItem(USER_KEY);
       if (oldUserData) {
-        console.log('🔄 Tentative de migration depuis ancien format...');
+        console.log(' Tentative de migration depuis ancien format...');
         const parsed = JSON.parse(oldUserData);
         
         // Si c'est un tableau, chercher l'utilisateur avec le bon ID

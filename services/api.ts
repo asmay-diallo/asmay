@@ -5,9 +5,9 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
-const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
-// const API_BASE_URL = 'https://asmay-backend.onrender.com/api'
-
+// const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
+const API_BASE_URL =`http://192.168.195.123:5000/api`
+console.log('🔧 API Base URL:', API_BASE_URL);
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -218,9 +218,6 @@ export const chatAPI = {
   getChats: () => 
     api.get<ChatsResponse>('/chats'),
   
-  // getMessages: (chatId: string) => 
-  //   api.get<MessagesResponse>(`/chats/${chatId}/messages`),
-  // 
     getMessages: async (chatId: string) => {
     const response = await api.get(`/chats/${chatId}/messages`);
    
@@ -228,7 +225,6 @@ export const chatAPI = {
   },
   sendMessage: (chatId: string, content: string) => 
     api.post<SingleMessageResponse>(`/chats/${chatId}/messages`, { content }),
-  
 
     sendVoiceMessage: async (chatId: string, audioUri: string, duration: number) => {
     try {
@@ -244,7 +240,7 @@ export const chatAPI = {
       } as any);
       
       // Ajouter la durée et tempId
-      formData.append('duration', duration.toString());
+      formData.append('duration', duration as any);
       formData.append('tempId', `temp-voice-${Date.now()}`);
       
       // Envoyer directement à la route chat/voice
@@ -255,7 +251,7 @@ export const chatAPI = {
         timeout: 30000, // 30 secondes timeout
       });
       
-      console.log('✅ Message vocal envoyé:', response.data);
+      console.log(' Message vocal envoyé:', response.data);
       return response;
       
     } catch (error: any) {
@@ -263,9 +259,10 @@ export const chatAPI = {
         message: error.message,
         url: error.config?.url,
         status: error.response?.status,
-        data: error.response?.data,
       });
       throw error;
     }
   },
+  deleteOneChat:(chatId:string)=>api.delete(`/chats/delete/${chatId}`),
+  deleteOneMessage:(messageId:string,chatId:string) =>api.delete(`/chats/${chatId}/messages/delete/${messageId}`)
 }

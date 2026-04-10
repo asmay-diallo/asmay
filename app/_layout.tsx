@@ -5,8 +5,24 @@ import { PersistGate } from 'redux-persist/integration/react';
 import ScreenLoading from '../components/ScreenLoading';
 import { store,persistor } from "../store/store";
 import mobileAds from "react-native-google-mobile-ads";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from "react"
-// Etats de Redux 
+
+// Initialisation du Query dans App et la configuration par defaut
+const queryClient = new QueryClient({
+  defaultOptions:{
+    queries:{
+      staleTime:5*60*1000,
+      gcTime:15*60*1000,
+      retry:1,
+      refetchOnWidowFocus:false,
+      refetchOnReconnect:true
+    },
+    mutations:{
+      retry:1
+    }
+  }
+})
 
 export default function RootLayout() {
 
@@ -24,7 +40,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Provider store={store}>
+    <QueryClientProvider client={queryClient} >
+        <Provider store={store}>
       <PersistGate  loading={<ScreenLoading />} persistor={persistor}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />          
@@ -33,6 +50,7 @@ export default function RootLayout() {
         </Stack>
     </PersistGate>
     </Provider>
+    </QueryClientProvider>
 
   );
 }

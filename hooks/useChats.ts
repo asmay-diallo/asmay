@@ -66,7 +66,7 @@ export const useChats = (): UseChatsReturn => {
     return unreadMessages.length;
   }, [messagesByChat, user?._id]);
 
-  // 🔥 Synchroniser le compteur avec les messages
+  //  Synchroniser le compteur avec les messages
   useEffect(() => {
     chats.forEach(chat => {
       const calculatedUnread = getChatUnreadCount(chat._id);
@@ -80,7 +80,7 @@ export const useChats = (): UseChatsReturn => {
     try {
       await dispatch(fetchChats()).unwrap();
     } catch (error) {
-      console.error('❌ Erreur chargement chats:', error);
+      // console.error('❌ Erreur chargement chats:', error);
     }
   }, [dispatch]);
 
