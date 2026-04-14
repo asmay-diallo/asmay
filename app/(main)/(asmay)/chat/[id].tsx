@@ -275,7 +275,7 @@ const sendMessage = async () => {
 
   const tempId = `temp-${Date.now()}`;
 
-  // Ajout optimiste via REDUX (pas de state local)
+  // Ajout optimiste via REDUX 
   dispatch(addTemporaryMessage({
     _id:tempId,
     chatId: chatId,
@@ -293,7 +293,7 @@ const sendMessage = async () => {
 
   // Envoyer via SOCKET
   if (socket && isConnected) {
-    console.log("📤 Envoi du message via socket:", { chatId, content: messageContent, tempId });
+    console.log(" Envoi du message via socket:", { chatId, content: messageContent, tempId });
     
     socket.emit("send_message", {
       chatId: chatId,
@@ -306,7 +306,7 @@ const sendMessage = async () => {
     const handleMessageSent = (data: { tempId: string; messageId: string }) => {
       if (data.tempId === tempId) {
         console.log("✅ Message confirmé par le serveur:", data);
-        // ✅ Mettre à jour via REDUX
+        //  Mettre à jour via REDUX
         dispatch(updateMessageStatus({
           tempId: data.tempId,
           status: 'sent',
@@ -348,7 +348,7 @@ const sendMessage = async () => {
     try {
       const response = await chatAPI.sendMessage(chatId as string, messageContent);
       if (response.data.success) {
-        // ✅ Ajouter le vrai message via REDUX
+        // Ajouter le vrai message via REDUX
         dispatch(receiveNewMessage(response.data.data));
       }
     } catch (error: any) {

@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
 // const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
-const API_BASE_URL =`http://192.168.195.123:5000/api`
+const API_BASE_URL =`http://10.83.109.123:5000/api`
 console.log('🔧 API Base URL:', API_BASE_URL);
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -142,7 +142,8 @@ export const userAPI = {
     api.get<ApiResponse<User>>("/users/"),
   getProfile: () => 
     api.get<ApiResponse<User>>('/users/profile'),
-
+  // Aimer un user en ligne 
+  likeOnlineUser:async(likedUserId:string)=>api.patch<ApiResponse<User>>(`/users/onlineLike/${likedUserId}`),
   // Créditer une récompense
   addReward: async (data: RewardRequest): Promise<ApiResponse<{ coins: number }>> => {
     const response = await api.post<ApiResponse<{ coins: number }>>(

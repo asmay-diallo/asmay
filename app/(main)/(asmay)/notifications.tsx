@@ -289,12 +289,12 @@ const NotificationsScreen: React.FC = () => {
       });
 
       socket.on("signal_accepted", (data: any) => {
-        console.log("✅ Votre signal a été accepté!", data);
+        console.log(" Votre signal a été accepté!", data);
         //  Recharger pour voir les changements
         loadNotifications();
       });
 
-      // 🔥 NOUVEAU : Écouter les mises à jour de statut
+      //   Écouter les mises à jour de statut
       socket.on("signal_updated", (updatedSignal: Signal) => {
         console.log("🔄 Signal mis à jour:", updatedSignal);
         setNotifications((prev) =>
@@ -348,7 +348,6 @@ const NotificationsScreen: React.FC = () => {
   const handleAcceptSignal = async (signalId: string): Promise<void> => {
     try {
       setProcessingSignal(signalId);
-      console.log("🔄 Acceptation du signal:", signalId);
 
       const response = await signalAPI.respond(signalId, "accepted");
             showRewardedAd();
@@ -356,9 +355,6 @@ const NotificationsScreen: React.FC = () => {
       // Extraction correcte du chatId selon la structure réelle
       const responseData = response.data.data;
       let chatId = responseData?.chatId;
-
-      console.log("💬 ChatId extrait:", chatId);
-      console.log("📊 Structure complète de data:", responseData);
 
       if (response.data.success) {
         // Mise à jour avec la bonne structure
@@ -379,19 +375,7 @@ const NotificationsScreen: React.FC = () => {
         setTimeout(async () => {
           await loadNotifications(); // Recharger les données fraîches
 
-          // 🔥 CORRECTION : Navigation conditionnelle après rechargement
-          // if (chatId) {
-          //   console.log("🚀 Navigation immédiate vers le chat:", chatId);
-          //   router.navigate({
-          //     pathname: "/(main)/message",
-          //     // params: { id: chatId },
-          //   });
-          // } else {
-          //   console.warn(
-          //     "⚠️ ChatId non trouvé, vérification dans les données rechargées..."
-          //   );
-          //   // Le chatId sera disponible après le rechargement
-          // }
+          
         }, 100);
       } else {
         throw new Error(

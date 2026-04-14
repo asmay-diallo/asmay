@@ -675,6 +675,7 @@ import { useAudioPlayer } from "expo-audio";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Location from "expo-location";
 import NetInfo from "@react-native-community/netinfo";
+import {useSelector} from 'react-redux'
 
 // TanStack Query hooks
 import { useNearbyUsersQuery, useUpdateLocation } from "../../../hooks/queries/useNearbyUserQuery";
@@ -695,11 +696,11 @@ export default function RadarScreen() {
   const [isSendingSignal, setIsSendingSignal] = useState<string | null>(null);
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  
+   
   const { user } = useAuth();
   const { socket, isConnected, sendSignal } = useSocket();
   const bannerRef = useRef<BannerAd>(null);
-  
+  const likesCount = useSelector((state:any)=>state.likes.count)
   //  TanStack Query
   const { data: nearbyUsers = [], isLoading, refetch } = useNearbyUsersQuery(
     currentLocation?.latitude || 0,
@@ -731,9 +732,11 @@ export default function RadarScreen() {
       
       // Watch position changes
       Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Highest, 
-          timeInterval: 50000, 
-          distanceInterval: 0 },
+        { 
+          accuracy: Location.Accuracy.Highest, 
+          timeInterval: 150000, // dans 3 minutes 
+          distanceInterval: 0.5 // par 1 mètre 
+         }, 
         async (loc) => {
           const updatedLocation = { 
             latitude: loc.coords.latitude,
@@ -748,7 +751,8 @@ export default function RadarScreen() {
     if (permission?.granted) initLocation();
     else if (permission && !permission.granted) requestPermission();
   }, [permission]);
-  
+
+
   // Connexion réseau
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => setNetworkConnected(!!state.isConnected));
@@ -836,7 +840,6 @@ export default function RadarScreen() {
     }
   };
 
-
   const refreshUsers = () => { refetch(); };
   
   if (!networkConnected) {
@@ -870,7 +873,11 @@ export default function RadarScreen() {
         onRefresh={refreshUsers}
         refreshing={isLoading}
       />
-      
+      <View style={styles.likeControl}>
+          <Ionicons name="heart" size={30} color="#fdf6fd" />
+        <Text style={styles.likeCount}>{likesCount}</Text>
+
+      </View>
       <View style={styles.controls}>
         <TouchableOpacity style={styles.controlButton} onPress={refreshUsers}>
           <Ionicons name="refresh-outline" size={20} color="white" />
@@ -892,4 +899,18 @@ const styles = StyleSheet.create({
   retryButtonText: { color: "#fff", fontWeight: "bold" },
   controls: { position: "absolute", top: 110, right: 10, gap: 10 },
   controlButton: { backgroundColor: 'rgba(52, 199, 89, 0.15)', padding: 8, top: -67, borderRadius: 25, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: 'rgba(52, 199, 89, 0.3)', width: 43, height: 43 },
+  likeControl:{
+   position: "absolute",
+    top: 90, 
+    right: 14, 
+  },
+  likeCount:{
+   color:"white",
+    position: "absolute",
+    top: 28, 
+    right: 10,
+    fontSize:12,
+    fontWeight:"bold"
+
+  }
 });

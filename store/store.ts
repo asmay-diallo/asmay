@@ -10,7 +10,8 @@ import signalReducer from './slices/signalSlice';
 import chatReducer from './slices/chatSlice';
 import messageReducer from './slices/messageSlice';
 import voiceMessageReducer from './slices/voiceMessageSlice';
-import userProfileReducer from './slices/userProfileSlice'
+import userProfileReducer from './slices/userProfileSlice';
+import likesReducer from "./slices/likesSlice"
 
 // Types
 export interface RootState {
@@ -19,7 +20,8 @@ export interface RootState {
   chats: ReturnType<typeof chatReducer>;
   messages: ReturnType<typeof messageReducer>;
   voiceMessages: ReturnType<typeof voiceMessageReducer>;
-  userProfile: ReturnType<typeof userProfileReducer>
+  userProfile: ReturnType<typeof userProfileReducer>;
+  likes:ReturnType<typeof likesReducer>;
 }
 
 export type AppDispatch = typeof store.dispatch;
@@ -37,7 +39,8 @@ const rootReducer = combineReducers({
   chats: chatReducer,
   messages: messageReducer,
   voiceMessages: voiceMessageReducer,
-  userProfile: userProfileReducer
+  userProfile: userProfileReducer,
+  likes:likesReducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
