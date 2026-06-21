@@ -344,16 +344,10 @@ const handleRegister = async () => {
         longitude,
       };
 
-      console.log("🚀 Tentative d'enregistrement...");
-
       // 2. Appel API register
       const response = await authAPI.register(requestData);
 
-      console.log("✅ Réponse du register:", {
-        success: response.data.success,
-        hasToken: !!(response.data.token || response.data.data?.token),
-        hasUser: !!(response.data.user || response.data.data?.user),
-      });
+   
 
       if (response.data.success) {
         // 3. Extraire token et user
@@ -361,7 +355,6 @@ const handleRegister = async () => {
         const user = response.data.user || response.data.data?.user;
 
         if (token && user) {
-          console.log("💾 Sauvegarde des données locales...");
           
           // 4. Sauvegarder LOCALEMENT (dans AsyncStorege)
           await saveUserData(user, token);
@@ -376,15 +369,15 @@ const handleRegister = async () => {
          
           Alert.alert(
             `Bienvenue ${user.username} sur ASMAY ✨`, 
-            `Nous somme un monde de réalité augmentée . Découvrez le futur avec notre technologie moderne ! Plongez dans une nouvelle dimension où le réel rencontre le virtuel !`,
+            `Nous somme un monde de réalité augmentée . Découvrez le futur avec notre technologie moderne ! Et à partir d'aujourd'hui votre vie est en réalité Asmayique dans un monde de rencontre réel !`,
             [{ text: "OK" }]
           );
         } else {
-          Alert.alert("Erreur", "Données manquantes dans la réponse");
+          Alert.alert("Vous vous êtes trompés", "Données manquantes dans la réponse");
         }
       } else {
         Alert.alert(
-          "Erreur",
+          "Vous vous êtes trompés",
           response.data.message || "Erreur lors de la création du compte"
         );
       }
@@ -404,7 +397,7 @@ const handleRegister = async () => {
         errorMessage = "Email déjà utilisé ou informations invalides";
       }
       
-      Alert.alert("Erreur", errorMessage);
+      Alert.alert("Petit Problème","Vérifier votre connexion internet et réessayer" );
     } finally {
       setIsLoading(false);
     }
@@ -468,7 +461,7 @@ if (!networkConnected) {
           </View>
         ) : formData.latitude !== 0 ? (
           <Text style={styles.locationSuccess}>
-            ✅ Asmay disponible
+            💛 Asmay disponible
             {/* : {formData.latitude.toFixed(2)},{" "} */}
             {/* {formData.longitude.toFixed(2)} */}
           </Text>
@@ -479,7 +472,7 @@ if (!networkConnected) {
       { verified ==="true" ? (
         <>
       <Input
-        placeholder="Nom d'utilisateur*"
+        placeholder="Nom d'asmay*"
         value={formData.username}
         onChangeText={(text) => updateFormData("username", text)}
       />
@@ -524,7 +517,7 @@ if (!networkConnected) {
       </> ) :(
          <> 
                 <Input
-          placeholder="Nom d'utilisateur*"
+          placeholder="Nom d'asmay*"
           value={formData.username}
           onChangeText={(text) => updateFormData("username", text)}
         />

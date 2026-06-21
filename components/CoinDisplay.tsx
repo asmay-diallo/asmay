@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 interface CoinDisplayProps {
   coins: number;
-  exchangeRate?: number; // 0.01 pour 1 coin = 0.01 USD
-  currency?: string; // 'USD', 'EUR', etc.
+  exchangeRate?: number;
+  currency?: string; 
   showToggle?: boolean;
 }
 
@@ -43,12 +43,12 @@ const CoinDisplay: React.FC<CoinDisplayProps> = ({
                 {formatCurrency(monetaryValue, currency)}
               </Text>
               <Text style={styles.label}>Solde 💰</Text>
-              <Text style={styles.hint}>💵 Tapez pour voir en coins</Text>
+              <Text style={styles.hint}>💵 Tapez pour voir en pièces</Text>
             </>
           ) : (
             <>
               <Text style={styles.value}>{coins.toLocaleString("fr-FR")}</Text>
-              <Text style={styles.label}>Coins</Text>
+              <Text style={styles.label}>Pièces</Text>
               <Text style={styles.hint}>🪙 Tapez pour convertir</Text>
             </>
           )}
@@ -60,7 +60,7 @@ const CoinDisplay: React.FC<CoinDisplayProps> = ({
             <Text style={styles.dualValue}>
               {coins.toLocaleString("fr-FR")}
             </Text>
-            <Text style={styles.dualLabel}>Coins</Text>
+            <Text style={styles.dualLabel}>Pièces</Text>
           </View>
           <Text style={styles.equals}>=</Text>
           <View style={styles.dualColumn}>
@@ -74,7 +74,7 @@ const CoinDisplay: React.FC<CoinDisplayProps> = ({
 
       {/* Information du taux */}
       <Text style={styles.rateInfo}>
-        1 coin = 0.0001 $
+        1 pièce = 0.0001 $
       </Text>
     </View>
   );

@@ -1,5 +1,783 @@
-// 
-// import React, { useState, useEffect, useMemo } from "react";
+// // 
+// // import React, { useState, useEffect, useMemo } from "react";
+// // import {
+// //   View,
+// //   Text,
+// //   FlatList,
+// //   TouchableOpacity,
+// //   StyleSheet,
+// //   Image,
+// //   ActivityIndicator,
+// //   Dimensions,
+// //   TextInput,
+// //   Modal
+// // } from "react-native";
+// // import { useSocket } from "../hooks/useSocket";
+// // import Ionicons from "@expo/vector-icons/Ionicons";
+// // import { useRouter } from "expo-router";
+// // import PublicProfileScreen from "./PublicProfileScreen";
+// // import { userAPI } from "@/services/api";
+// // import {HeartAnimation} from "./HeartBubble"
+// // const { width } = Dimensions.get("window");
+// // 
+// // // Types
+// // export interface ARUser {
+// //   _id: string;
+// //   username: string;
+// //   profilePicture?: string | null;
+// //   distance: number;
+// //   bearing: number;
+// //   interests?: {
+// //     common: string[];
+// //     count: number;
+// //   };
+// //   precision?: {
+// //     level: number;
+// //     text: string;
+// //     icon: string;
+// //     type:string,
+// //     shortName:string,
+// //     fullName:string
+// //   };
+// //   lastActive?: Date;
+// //   isOnline?: boolean;
+// // }
+// // 
+// // export interface UserListViewProps {
+// //   users: ARUser[];
+// //   isSendingSignal: string | null;
+// //   onUserPress: (userId: string) => void;
+// //   currentLocation: { latitude: number; longitude: number };
+// //   onRefresh?: () => void;
+// //   refreshing?: boolean;
+// //   ListHeaderComponent?: React.ReactElement;
+// //   onSearch?: (query: string) => void;
+// //   showSearchBar?: boolean;
+// // }
+// // 
+// // const ARRadarView: React.FC<UserListViewProps> = ({
+// //   users,
+// //   isSendingSignal,
+// //   onUserPress,
+// //   currentLocation,
+// //   onRefresh,
+// //   refreshing = false,
+// //   ListHeaderComponent,
+// //   onSearch,
+// //   showSearchBar = true,
+// // }) => {
+// //   const { onlineUsers,socket,isConnected } = useSocket();
+// //   const router = useRouter();
+// //   
+// //   // États
+// //   const [onlineCount, setOnlineCount] = useState(0);
+// //   const [searchQuery, setSearchQuery] = useState("");
+// //   const [filteredUsers, setFilteredUsers] = useState<ARUser[]>(users);
+// //   const [searchMode, setSearchMode] = useState<'local' | 'api'>('local');
+// //   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+// //   const [userLocationPlace,setUserLocationPlace] = useState<string | undefined>(undefined)
+// //   const [userDistance,setUserDistance]= useState<number | undefined>(undefined)
+// // 
+// //   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
+// //     const [showHearts, setShowHearts] = useState(false);
+// // 
+// // 
+// //   // Mettre à jour le compteur en ligne
+// //   useEffect(() => {
+// //     if (users.length > 0 && onlineUsers) {
+// //       const count = users.filter(user => onlineUsers.includes(user._id)).length;
+// //       setOnlineCount(count);
+// //     }
+// //   }, [users, onlineUsers]);
+// // 
+// //   // Mettre à jour les utilisateurs filtrés
+// //   useEffect(() => {
+// //     if (searchQuery.trim() === "") {
+// //       setFilteredUsers(users);
+// //     } else {
+// //       const query = searchQuery.toLowerCase();
+// //       const filtered = users.filter(user => {
+// //         const usernameMatch = user.username.toLowerCase().includes(query);
+// //         const interestsMatch = user.interests?.common?.some(
+// //           interest => interest.toLowerCase().includes(query)
+// //         ) || false;
+// //         return usernameMatch || interestsMatch;
+// //       });
+// //       setFilteredUsers(filtered);
+// //     }
+// //   }, [users, searchQuery]);
+// // 
+// //   // Gestionnaire de recherche
+// //   const handleSearch = (text: string) => {
+// //     setSearchQuery(text);
+// //     if (onSearch && text.length > 2) {
+// //       setSearchMode('api');
+// //       onSearch(text);
+// //     } else {
+// //       setSearchMode('local');
+// //     }
+// //   };
+// // 
+// //   // Gestionnaire d'ouverture de profil
+// //   const handleOpenProfile = (userId: string,) => {
+// //     const user = users.find((user)=>user._id === userId)
+// //     const place = user?.precision?.text
+// //     const distance = user?.distance
+// //     setSelectedUserId(userId);
+// //     setUserLocationPlace(place)
+// //     setUserDistance(distance)
+// //     setIsUserProfileVisible(true);
+// //   };
+// // 
+// //   // Gestionnaire de fermeture de profil
+// //   const handleCloseProfile = () => {
+// //     setIsUserProfileVisible(false);
+// //    setUserLocationPlace(undefined)
+// //     setSelectedUserId(null);
+// //   };
+// // 
+// // // Aimer la présence en ligne d'un utilisateur 
+// //  const handleLikeOnlineUser =async (userId:string)=>{
+// //   try {
+// //     // like via socket 
+// //     if (socket && isConnected) {
+// //       socket.emit("like_online_user",userId)
+// //     } else {
+// //       
+// //       const response = await userAPI.likeOnlineUser(userId)
+// //     }
+// //     
+// //   } catch (error:any) {
+// // 
+// //     console.error("Error to like this user :" , error)
+// //   }
+// //  }
+// // 
+// //   //  Vérifier si un utilisateur est en ligne
+// //   const isUserOnline = (userId: string): boolean => {
+// //     return onlineUsers?.includes(userId) || false;
+// //   };
+// // 
+// //   //  Obtient la couleur en fonction de la distance
+// //   const getDistanceColor = (distance: number): string => {
+// //     if (distance <= 25) return '#FF3B30';
+// //     if (distance <= 50) return '#FF9500';
+// //     if (distance <= 100) return '#34C759';
+// //     if (distance <= 500) return '#007AFF';
+// //     return '#8E8E93';
+// //   };
+// // 
+// //   /**
+// //    * Obtient la flèche directionnelle
+// //    */
+// //   const getDirectionArrow = (bearing: number): string => {
+// //     const normalizedBearing = ((bearing % 360) + 360) % 360;
+// //     
+// //     if (normalizedBearing >= 337.5 || normalizedBearing < 22.5) return '⬆️';
+// //     if (normalizedBearing >= 22.5 && normalizedBearing < 67.5) return '↗️';
+// //     if (normalizedBearing >= 67.5 && normalizedBearing < 112.5) return '➡️';
+// //     if (normalizedBearing >= 112.5 && normalizedBearing < 157.5) return '↘️';
+// //     if (normalizedBearing >= 157.5 && normalizedBearing < 202.5) return '⬇️';
+// //     if (normalizedBearing >= 202.5 && normalizedBearing < 247.5) return '↙️';
+// //     if (normalizedBearing >= 247.5 && normalizedBearing < 292.5) return '⬅️';
+// //     if (normalizedBearing >= 292.5 && normalizedBearing < 337.5) return '↖️';
+// //     return '⬆️';
+// //   };
+// // 
+// //   /**
+// //    * Formate la distance
+// //    */
+// //   const formatDistance = (distance: number): string => {
+// //     if (distance < 1000) {
+// //       return `${Math.round(distance)} m`;
+// //     } else {
+// //       return `${(distance / 1000).toFixed(0)} km`;
+// //     }
+// //   };
+// // 
+// //   /**
+// //    * Calcule le temps écoulé depuis la dernière activité
+// //    */
+// //   const getLastActiveText = (lastActive?: Date): string => {
+// //     if (!lastActive) return '';
+// //     
+// //     const now = new Date();
+// //     const diffMs = now.getTime() - new Date(lastActive).getTime();
+// //     const diffMins = Math.floor(diffMs / 60000);
+// //     
+// //     if (diffMins < 1) return 'En ligne';
+// //     if (diffMins < 60) return `Il y a ${diffMins} min`;
+// //     
+// //     const diffHours = Math.floor(diffMins / 60);
+// //     if (diffHours < 24) return `Il y a ${diffHours} h`;
+// //     
+// //     const diffDays = Math.floor(diffHours / 24);
+// //     return `Il y a ${diffDays} j`;
+// //   };
+// // 
+// //   /**
+// //    * Rendu de la barre de recherche
+// //    */
+// //   const renderSearchBar = () => (
+// //     <View style={styles.searchContainer}>
+// //       <View style={styles.searchInputContainer}>
+// //         <Ionicons name="search" size={20} color="rgba(255,255,255,0.5)" style={styles.searchIcon} />
+// //         <TextInput
+// //           style={styles.searchInput}
+// //           placeholder="Rechercher par nom ou intérêt..."
+// //           placeholderTextColor="rgba(255,255,255,0.5)"
+// //           value={searchQuery}
+// //           onChangeText={handleSearch}
+// //           returnKeyType="search"
+// //           clearButtonMode="while-editing"
+// //         />
+// //         {searchQuery.length > 0 && (
+// //           <TouchableOpacity onPress={() => handleSearch("")}>
+// //             <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.5)" />
+// //           </TouchableOpacity>
+// //         )}
+// //       </View>
+// //       
+// //       {searchQuery.length > 0 && (
+// //         <View style={styles.searchResultsInfo}>
+// //           <Text style={styles.searchResultsText}>
+// //             {filteredUsers.length} résultat{filteredUsers.length > 1 ? 's' : ''}
+// //             {searchMode === 'api' ? ' (recherche avancée)' : ''}
+// //           </Text>
+// //         </View>
+// //       )}
+// //     </View>
+// //   );
+// // 
+// //   /**
+// //    * Rendu de l'en-tête avec le compteur
+// //    */
+// //   const renderHeader = () => (
+// //     <View style={styles.headerContainer}>
+// //       <View style={styles.onlineCounter}>
+// //         <View style={styles.onlineDot} />
+// //         <Text style={styles.onlineCounterText}>
+// //           {onlineCount} en ligne
+// //         </Text>
+// //       </View>
+// //     </View>
+// //   );
+// // 
+// //   /**
+// //    * Rendu d'un élément utilisateur
+// //    */
+// //  
+// //   const renderUserItem = ({ item: user }: { item: ARUser }) => {
+// //     const isSending = isSendingSignal === user._id;
+// //     const online = isUserOnline(user._id);
+// //        const handleLike = () => {
+// //   setShowHearts(true);
+// //   handleLikeOnlineUser(user._id);
+// // };
+// //   
+// //     // Mettre en évidence les termes recherchés
+// //     const highlightSearch = (text: string): JSX.Element => {
+// //       if (!searchQuery || searchQuery.length < 2) {
+// //         return <Text style={styles.username}>{text}</Text>;
+// //       }
+// //       
+// //       const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+// //       return (
+// //         <Text style={styles.username}>
+// //           {parts.map((part, index) => 
+// //             part.toLowerCase() === searchQuery.toLowerCase() ? (
+// //               <Text key={index} style={styles.highlightedText}>{part}</Text>
+// //             ) : (
+// //               <Text key={index}>{part}</Text>
+// //             )
+// //           )}
+// //         </Text>
+// //       );
+// //     };
+// // 
+// //     return (
+// //       <TouchableOpacity
+// //         style={[
+// //           styles.userCard,
+// //           online && styles.userCardOnline
+// //         ]}
+// //         disabled={isSending}
+// //         activeOpacity={0.7}
+// //         testID={`user-card-${user._id}`}
+// //       >
+// //         
+// //         {/* Photo de profil avec indicateur de statut */}
+// //         <TouchableOpacity 
+// //           style={styles.avatarContainer} 
+// //           onPress={() => handleOpenProfile(user._id)}
+// //         >
+// //           {user.profilePicture ? (
+// //             <Image 
+// //               source={{ uri: user.profilePicture }} 
+// //               style={styles.avatar}
+// //               defaultSource={require('../assets/images/asmay-splash-screen.png')}
+// //             />
+// //           ) : (
+// //             <View style={styles.avatarPlaceholder}>
+// //               <Text style={styles.avatarText}>
+// //                 {user.username?.charAt(0).toUpperCase() || '?'}
+// //               </Text>
+// //             </View>
+// //           )}
+// //           
+// //           {online && <View style={styles.onlineIndicator} />}
+// //           
+// //           {isSending && (
+// //             <View style={styles.sendingBadge}>
+// //               <ActivityIndicator size="small" color="#fff" />
+// //             </View>
+// //           )}
+// //         </TouchableOpacity>
+// // 
+// //         {/* Informations utilisateur */}
+// //         <TouchableOpacity 
+// //           style={styles.userInfo}
+// //          onPress={() => onUserPress(user._id)}
+// //         >
+// //           {/* Nom et distance */}
+// //           <View style={styles.nameRow}>
+// //             {highlightSearch(user.username)}
+// //             <Text style={[styles.distance, { color: getDistanceColor(user.distance) }]}>
+// //               {formatDistance(user.distance)}
+// //             </Text>
+// //           </View>
+// //              
+// //           {/* Localisation */}
+// //           <View style={styles.locationRow}>
+// //             <Text style={styles.locationIcon}>
+// //               {user.precision?.icon}
+// //             </Text>
+// //             <Text style={styles.locationText} numberOfLines={1}>
+// //              {user.precision?.fullName}
+// //             </Text>
+// //           </View>
+// //             <Text style={styles.locationText} numberOfLines={1}>
+// //                {user.precision?.type}
+// //             </Text>
+// // 
+// //           {/* Intérêts communs */}
+// //           {user.interests && user.interests.count > 0 && (
+// //             <View style={styles.interestsContainer}>
+// //               <Text style={styles.interestsText}>
+// //                 {user.interests.count} intérêt{user.interests.count > 1 ? 's' : ''} commun{user.interests.count > 1 ? 's' : ''}
+// //               </Text>
+// //               
+// //               {/* Aperçu des intérêts */}
+// //               {user.interests.common && user.interests.common.length > 0 && (
+// //                 <View style={styles.interestsPreview}>
+// //                   {user.interests.common.slice(0, 2).map((interest: string, idx: number) => (
+// //                     <Text key={`${user._id}-interest-${idx}`} style={styles.interestTag}>
+// //                       {interest}
+// //                     </Text>
+// //                   ))}
+// //                   {user.interests.common.length > 2 && (
+// //                     <Text style={styles.moreInterests}>
+// //                       +{user.interests.common.length - 2}
+// //                     </Text>
+// //                   )}
+// //                 </View>
+// //               )}
+// //             </View>
+// //           )}
+// // 
+// //           {/* Statut en ligne ou dernière activité */}
+// //           <Text style={styles.statusText}>
+// //             {online ? (
+// //               <Text style={styles.onlineText}>● En ligne</Text>
+// //             ) : (
+// //               user.lastActive && getLastActiveText(user.lastActive)
+// //             )}
+// //           </Text>
+// //         </TouchableOpacity>
+// // 
+// //         {/* Like zone */}
+// //         <View style={styles.directionContainer}>
+// //             <Ionicons onPress={handleLike} name="heart-outline" size={34} color={"yellow"}/>
+// //         </View>
+// //         
+// //       </TouchableOpacity>
+// //     );
+// //   };
+// // 
+// //   /**
+// //    * Rendu de la liste vide
+// //    */
+// //   const renderEmpty = () => (
+// //     <View style={styles.emptyContainer}>
+// //       <Text style={styles.emptyIcon}>
+// //         {searchQuery.length > 0 ? '🔍' : '👥'}
+// //       </Text>
+// //       <Text style={styles.emptyTitle}>
+// //         {searchQuery.length > 0 ? 'Aucun résultat' : 'Aucun utilisateur trouvé'}
+// //       </Text>
+// //       <Text style={styles.emptyText}>
+// //         {searchQuery.length > 0 
+// //           ? `Aucun utilisateur ne correspond à "${searchQuery}"`
+// //           : 'Élargissez votre recherche ou réessayez plus tard'}
+// //       </Text>
+// //       {searchQuery.length > 0 && (
+// //         <TouchableOpacity 
+// //           style={styles.clearSearchButton}
+// //           onPress={() => handleSearch("")}
+// //         >
+// //           <Text style={styles.clearSearchText}>Effacer la recherche</Text>
+// //         </TouchableOpacity>
+// //       )}
+// //     </View>
+// //   );
+// // 
+// //   /**
+// //    * Rendu du séparateur
+// //    */
+// //   const renderSeparator = () => <View style={styles.separator} />;
+// // 
+// //   return (
+// //     <>
+// //       <FlatList
+// //         data={filteredUsers}
+// //         keyExtractor={(item) => item._id}
+// //         renderItem={renderUserItem}
+// //         contentContainerStyle={styles.listContainer}
+// //         showsVerticalScrollIndicator={false}
+// //         ListEmptyComponent={renderEmpty}
+// //         ListHeaderComponent={
+// //           <>
+// //             {ListHeaderComponent}
+// //             {showSearchBar && renderSearchBar()}
+// //             {renderHeader()}
+// //           </>
+// //         }
+// //         ItemSeparatorComponent={renderSeparator}
+// //         onRefresh={onRefresh}
+// //         refreshing={refreshing}
+// //         initialNumToRender={10}
+// //         maxToRenderPerBatch={10}
+// //         windowSize={5}
+// //         removeClippedSubviews={true}
+// //       />
+// //      
+// //       {/* {/* Modal de profil public - } */}
+// //       <Modal
+// //         visible={isUserProfileVisible}
+// //         transparent
+// //         animationType="slide"
+// //         onRequestClose={handleCloseProfile}
+// //       >
+// //         <View style={styles.modalContainer}>
+// //           {/* <View style={styles.modalHeader}>
+// //             <TouchableOpacity onPress={handleCloseProfile} style={styles.closeButton}>
+// //               <Ionicons name="close" size={24} color="#fff" />
+// //             </TouchableOpacity>
+// //           </View> */}
+// //           {selectedUserId && (
+// //             <PublicProfileScreen 
+// //               userId={selectedUserId} 
+// //               userPlace={userLocationPlace}
+// //               userDistance={userDistance}
+// //               onClose={handleCloseProfile}
+// //             />
+// //           )}
+// //         </View>
+// //       </Modal>
+// //     </>
+// //   );
+// // };
+// // 
+// // // Styles
+// // const styles = StyleSheet.create({
+// //   listContainer: {
+// //     paddingTop: 16,
+// //     paddingBottom: 32,
+// //     flexGrow: 1,
+// //   },
+// //   // Styles de recherche
+// //   searchContainer: {
+// //     top: 25,
+// //     paddingHorizontal: 14,
+// //     marginBottom: 20,
+// //   },
+// //   searchInputContainer: {
+// //     flexDirection: 'row',
+// //     alignItems: 'center',
+// //     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+// //     borderRadius: 25,
+// //     width: 260,
+// //     paddingHorizontal: 12,
+// //     paddingVertical: 5,
+// //     borderWidth: 1,
+// //     borderColor: 'rgba(255, 255, 255, 0.2)',
+// //   },
+// //   searchIcon: {
+// //     marginRight: 8,
+// //   },
+// //   searchInput: {
+// //     flex: 1,
+// //     color: '#fff',
+// //     fontSize: 12,
+// //     paddingVertical: 6,
+// //   },
+// //   searchResultsInfo: {
+// //     marginTop: 8,
+// //     paddingHorizontal: 4,
+// //   },
+// //   searchResultsText: {
+// //     color: 'rgba(255, 255, 255, 0.7)',
+// //     fontSize: 13,
+// //     fontStyle: 'italic',
+// //   },
+// //   // Styles d'en-tête
+// //   headerContainer: {
+// //     flexDirection: 'row',
+// //     justifyContent: 'space-between',
+// //     alignItems: 'center',
+// //     paddingHorizontal: 16,
+// //     paddingVertical: 12,
+// //     marginBottom: 8,
+// //   },
+// //   onlineCounter: {
+// //     flexDirection: 'row',
+// //     alignItems: 'center',
+// //     backgroundColor: 'rgba(52, 199, 89, 0.15)',
+// //     paddingHorizontal: 12,
+// //     paddingVertical: 6,
+// //     borderRadius: 20,
+// //     borderWidth: 1,
+// //     borderColor: 'rgba(52, 199, 89, 0.3)',
+// //   },
+// //   onlineDot: {
+// //     width: 8,
+// //     height: 8,
+// //     borderRadius: 4,
+// //     backgroundColor: '#34C759',
+// //     marginRight: 6,
+// //   },
+// //   onlineCounterText: {
+// //     color: '#34C759',
+// //     fontSize: 13,
+// //     fontWeight: '600',
+// //   },
+// //   userCard: {
+// //     flexDirection: 'row',
+// //     backgroundColor: 'rgba(8, 8, 8, 0.08)',
+// //     borderRadius: 16,
+// //     padding: 12,
+// //     borderWidth: 1,
+// //     borderColor: 'rgba(255, 252, 252, 0.1)',
+// //     width: width - 32,
+// //     alignSelf: 'center',
+// //   },
+// //   userCardOnline: {
+// //     borderColor: '#34C759',
+// //     borderWidth: 1.5,
+// //     backgroundColor: 'rgba(52, 199, 89, 0.05)',
+// //   },
+// //   avatarContainer: {
+// //     position: 'relative',
+// //     marginRight: 12,
+// //   },
+// //   avatar: {
+// //     width: 60,
+// //     height: 60,
+// //     borderRadius: 30,
+// //     borderWidth: 2,
+// //     borderColor: 'rgba(255, 255, 255, 0.3)',
+// //   },
+// //   avatarPlaceholder: {
+// //     width: 60,
+// //     height: 60,
+// //     borderRadius: 30,
+// //     backgroundColor: '#007AFF',
+// //     justifyContent: 'center',
+// //     alignItems: 'center',
+// //     borderWidth: 2,
+// //     borderColor: '#fff',
+// //   },
+// //   avatarText: {
+// //     color: '#fff',
+// //     fontSize: 24,
+// //     fontWeight: 'bold',
+// //   },
+// //   onlineIndicator: {
+// //     position: 'absolute',
+// //     bottom: 0,
+// //     right: 0,
+// //     width: 14,
+// //     height: 14,
+// //     borderRadius: 7,
+// //     backgroundColor: '#34C759',
+// //     borderWidth: 2,
+// //     borderColor: '#fff',
+// //   },
+// //   sendingBadge: {
+// //     position: 'absolute',
+// //     top: -4,
+// //     right: -4,
+// //     backgroundColor: '#FF3B30',
+// //     borderRadius: 12,
+// //     padding: 4,
+// //     borderWidth: 1,
+// //     borderColor: '#fff',
+// //   },
+// //   userInfo: {
+// //     flex: 1,
+// //     marginRight: 8,
+// //   },
+// //   nameRow: {
+// //     flexDirection: 'row',
+// //     justifyContent: 'space-between',
+// //     alignItems: 'center',
+// //     marginBottom: 4,
+// //   },
+// //   username: {
+// //     color: '#fff',
+// //     fontSize: 16,
+// //     fontWeight: 'bold',
+// //     flex: 1,
+// //     marginRight: 8,
+// //   },
+// //   highlightedText: {
+// //     backgroundColor: 'rgba(255, 215, 0, 0.3)',
+// //     color: '#FFD700',
+// //     fontWeight: 'bold',
+// //   },
+// //   distance: {
+// //     fontSize: 14,
+// //     fontWeight: '600',
+// //   },
+// //   locationRow: {
+// //     flexDirection: 'row',
+// //     alignItems: 'center',
+// //     marginBottom: 6,
+// //   },
+// //   locationIcon: {
+// //     fontSize: 14,
+// //     marginRight: 4,
+// //   },
+// //   locationText: {
+// //     color: 'rgba(255, 255, 255, 0.6)',
+// //     fontSize: 10,
+// //     flex: 1,
+// //   },
+// //   interestsContainer: {
+// //     marginBottom: 4,
+// //   },
+// //   interestsText: {
+// //     color: 'rgba(255, 255, 255, 0.8)',
+// //     fontSize: 12,
+// //     fontWeight: '500',
+// //     marginBottom: 4,
+// //   },
+// //   interestsPreview: {
+// //     flexDirection: 'row',
+// //     flexWrap: 'wrap',
+// //     alignItems: 'center',
+// //   },
+// //   interestTag: {
+// //     backgroundColor: 'rgba(255, 255, 255, 0.15)',
+// //     borderRadius: 12,
+// //     paddingHorizontal: 8,
+// //     paddingVertical: 2,
+// //     marginRight: 4,
+// //     marginBottom: 2,
+// //     color: '#fff',
+// //     fontSize: 10,
+// //   },
+// //   moreInterests: {
+// //     color: 'rgba(255, 255, 255, 0.5)',
+// //     fontSize: 10,
+// //     marginLeft: 2,
+// //   },
+// //   statusText: {
+// //     color: 'rgba(255, 255, 255, 0.7)',
+// //     fontSize: 10,
+// //     marginTop: 2,
+// //   },
+// //   onlineText: {
+// //     color: '#34C759',
+// //     fontWeight: '600',
+// //   },
+// //   directionContainer: {
+// //     alignItems: 'center',
+// //     justifyContent: 'center',
+// //     minWidth: 50,
+// //   },
+// //   directionArrow: {
+// //     fontSize: 24,
+// //   },
+// //   bearing: {
+// //     color: 'rgba(255, 255, 255, 0.5)',
+// //     fontSize: 10,
+// //     marginTop: 2,
+// //   },
+// //   emptyContainer: {
+// //     flex: 1,
+// //     justifyContent: 'center',
+// //     alignItems: 'center',
+// //     paddingVertical: 60,
+// //     paddingHorizontal: 20,
+// //   },
+// //   emptyIcon: {
+// //     fontSize: 60,
+// //     marginBottom: 16,
+// //   },
+// //   emptyTitle: {
+// //     color: '#fff',
+// //     fontSize: 18,
+// //     fontWeight: 'bold',
+// //     marginBottom: 8,
+// //     textAlign: 'center',
+// //   },
+// //   emptyText: {
+// //     color: 'rgba(255, 255, 255, 0.5)',
+// //     fontSize: 14,
+// //     textAlign: 'center',
+// //     marginBottom: 20,
+// //   },
+// //   clearSearchButton: {
+// //     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+// //     paddingHorizontal: 20,
+// //     paddingVertical: 10,
+// //     borderRadius: 20,
+// //     borderWidth: 1,
+// //     borderColor: 'rgba(255, 255, 255, 0.2)',
+// //   },
+// //   clearSearchText: {
+// //     color: '#fff',
+// //     fontSize: 14,
+// //   },
+// //   separator: {
+// //     height: 8,
+// //   },
+// //   // Styles pour le modal
+// //   modalContainer: {
+// //     flex: 1,
+// //     backgroundColor: '#203447ff',
+// //   },
+// //   modalHeader: {
+// //     flexDirection: 'row',
+// //     justifyContent: 'flex-end',
+// //     paddingTop: 50,
+// //     paddingRight: 20,
+// //     paddingBottom: 10,
+// //     backgroundColor: 'rgba(0,0,0,0.3)',
+// //   },
+// //   closeButton: {
+// //     width: 40,
+// //     height: 40,
+// //     borderRadius: 20,
+// //     backgroundColor: 'rgba(255,255,255,0.2)',
+// //     justifyContent: 'center',
+// //     alignItems: 'center',
+// //   },
+// // });
+// // 
+// // export default ARRadarView;
+// import React, { useState, useEffect, useRef } from "react";
 // import {
 //   View,
 //   Text,
@@ -10,15 +788,16 @@
 //   ActivityIndicator,
 //   Dimensions,
 //   TextInput,
-//   Modal
+//   Modal,
+//   Animated
 // } from "react-native";
 // import { useSocket } from "../hooks/useSocket";
 // import Ionicons from "@expo/vector-icons/Ionicons";
 // import { useRouter } from "expo-router";
 // import PublicProfileScreen from "./PublicProfileScreen";
 // import { userAPI } from "@/services/api";
-// import {HeartAnimation} from "./HeartBubble"
-// const { width } = Dimensions.get("window");
+// 
+// const { width, height } = Dimensions.get("window");
 // 
 // // Types
 // export interface ARUser {
@@ -35,9 +814,9 @@
 //     level: number;
 //     text: string;
 //     icon: string;
-//     type:string,
-//     shortName:string,
-//     fullName:string
+//     type: string;
+//     shortName: string;
+//     fullName: string;
 //   };
 //   lastActive?: Date;
 //   isOnline?: boolean;
@@ -55,6 +834,68 @@
 //   showSearchBar?: boolean;
 // }
 // 
+// // Composant d'animation de cœur qui part du point de clic
+// const FloatingHeart = ({ startX, startY, onComplete }: { startX: number; startY: number; onComplete: () => void }) => {
+//   const translateY = useRef(new Animated.Value(0)).current;
+//   const opacity = useRef(new Animated.Value(1)).current;
+//   const scale = useRef(new Animated.Value(0.5)).current;
+//   const translateX = useRef(new Animated.Value(0)).current;
+//   
+//   // Direction aléatoire (légèrement à gauche ou à droite)
+//   const randomX = (Math.random() - 0.5) * 80;
+//   
+//   useEffect(() => {
+//     Animated.parallel([
+//       Animated.timing(translateY, {
+//         toValue: -150,
+//         duration: 1200,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(translateX, {
+//         toValue: randomX,
+//         duration: 1200,
+//         useNativeDriver: true,
+//       }),
+//       Animated.timing(opacity, {
+//         toValue: 0,
+//         duration: 1200,
+//         useNativeDriver: true,
+//       }),
+//       Animated.sequence([
+//         Animated.timing(scale, {
+//           toValue: 1.2,
+//           duration: 100,
+//           useNativeDriver: true,
+//         }),
+//         Animated.timing(scale, {
+//           toValue: 0.5,
+//           duration: 1100,
+//           useNativeDriver: true,
+//         }),
+//       ]),
+//     ]).start(() => onComplete());
+//   }, []);
+//   
+//   const hearts = ['❤️', '💖', '💗', '💓', '💕', '💝', '💘'];
+//   const randomHeart = hearts[Math.floor(Math.random() * hearts.length)];
+//   
+//   return (
+//     <Animated.View
+//       style={[
+//         styles.floatingHeart,
+//         {
+//           left: startX - 15,
+//           top: startY - 20,
+//           transform: [{ translateY }, { translateX }, { scale }],
+//           opacity,
+//         },
+//       ]}
+//     >
+//       <Text style={styles.heartText}>{randomHeart}</Text>
+//     </Animated.View>
+//   );
+// };
+// 
 // const ARRadarView: React.FC<UserListViewProps> = ({
 //   users,
 //   isSendingSignal,
@@ -66,7 +907,7 @@
 //   onSearch,
 //   showSearchBar = true,
 // }) => {
-//   const { onlineUsers,socket,isConnected } = useSocket();
+//   const { onlineUsers, socket, isConnected } = useSocket();
 //   const router = useRouter();
 //   
 //   // États
@@ -75,12 +916,12 @@
 //   const [filteredUsers, setFilteredUsers] = useState<ARUser[]>(users);
 //   const [searchMode, setSearchMode] = useState<'local' | 'api'>('local');
 //   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-//   const [userLocationPlace,setUserLocationPlace] = useState<string | undefined>(undefined)
-//   const [userDistance,setUserDistance]= useState<number | undefined>(undefined)
-// 
+//   const [userLocationPlace, setUserLocationPlace] = useState<string | undefined>(undefined);
+//   const [userDistance, setUserDistance] = useState<number | undefined>(undefined);
 //   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
-//     const [showHearts, setShowHearts] = useState(false);
-// 
+//   
+//   // État pour les cœurs flottants
+//   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
 // 
 //   // Mettre à jour le compteur en ligne
 //   useEffect(() => {
@@ -119,46 +960,43 @@
 //   };
 // 
 //   // Gestionnaire d'ouverture de profil
-//   const handleOpenProfile = (userId: string,) => {
-//     const user = users.find((user)=>user._id === userId)
-//     const place = user?.precision?.text
-//     const distance = user?.distance
+//   const handleOpenProfile = (userId: string) => {
+//     const user = users.find((user) => user._id === userId);
+//     const place = user?.precision?.text;
+//     const distance = user?.distance;
 //     setSelectedUserId(userId);
-//     setUserLocationPlace(place)
-//     setUserDistance(distance)
+//     setUserLocationPlace(place);
+//     setUserDistance(distance);
 //     setIsUserProfileVisible(true);
 //   };
 // 
 //   // Gestionnaire de fermeture de profil
 //   const handleCloseProfile = () => {
 //     setIsUserProfileVisible(false);
-//    setUserLocationPlace(undefined)
+//     setUserLocationPlace(undefined);
 //     setSelectedUserId(null);
 //   };
 // 
-// // Aimer la présence en ligne d'un utilisateur 
-//  const handleLikeOnlineUser =async (userId:string)=>{
-//   try {
-//     // like via socket 
-//     if (socket && isConnected) {
-//       socket.emit("like_online_user",userId)
-//     } else {
-//       
-//       const response = await userAPI.likeOnlineUser(userId)
+//   // Aimer la présence en ligne d'un utilisateur avec animation
+//   const handleLikeOnlineUser = async (userId: string) => {
+//     try {
+//       // like via socket
+//       if (socket && isConnected) {
+//         socket.emit("like_online_user", userId);
+//       } else {
+//         const response = await userAPI.likeOnlineUser(userId);
+//       }
+//     } catch (error: any) {
+//       console.error("Error to like this user:", error);
 //     }
-//     
-//   } catch (error:any) {
+//   };
 // 
-//     console.error("Error to like this user :" , error)
-//   }
-//  }
-// 
-//   //  Vérifier si un utilisateur est en ligne
+//   // Vérifier si un utilisateur est en ligne
 //   const isUserOnline = (userId: string): boolean => {
 //     return onlineUsers?.includes(userId) || false;
 //   };
 // 
-//   //  Obtient la couleur en fonction de la distance
+//   // Obtient la couleur en fonction de la distance
 //   const getDistanceColor = (distance: number): string => {
 //     if (distance <= 25) return '#FF3B30';
 //     if (distance <= 50) return '#FF9500';
@@ -167,9 +1005,7 @@
 //     return '#8E8E93';
 //   };
 // 
-//   /**
-//    * Obtient la flèche directionnelle
-//    */
+//   // Obtient la flèche directionnelle
 //   const getDirectionArrow = (bearing: number): string => {
 //     const normalizedBearing = ((bearing % 360) + 360) % 360;
 //     
@@ -184,9 +1020,7 @@
 //     return '⬆️';
 //   };
 // 
-//   /**
-//    * Formate la distance
-//    */
+//   // Formate la distance
 //   const formatDistance = (distance: number): string => {
 //     if (distance < 1000) {
 //       return `${Math.round(distance)} m`;
@@ -195,9 +1029,7 @@
 //     }
 //   };
 // 
-//   /**
-//    * Calcule le temps écoulé depuis la dernière activité
-//    */
+//   // Calcule le temps écoulé depuis la dernière activité
 //   const getLastActiveText = (lastActive?: Date): string => {
 //     if (!lastActive) return '';
 //     
@@ -215,9 +1047,7 @@
 //     return `Il y a ${diffDays} j`;
 //   };
 // 
-//   /**
-//    * Rendu de la barre de recherche
-//    */
+//   // Rendu de la barre de recherche
 //   const renderSearchBar = () => (
 //     <View style={styles.searchContainer}>
 //       <View style={styles.searchInputContainer}>
@@ -249,9 +1079,7 @@
 //     </View>
 //   );
 // 
-//   /**
-//    * Rendu de l'en-tête avec le compteur
-//    */
+//   // Rendu de l'en-tête avec le compteur
 //   const renderHeader = () => (
 //     <View style={styles.headerContainer}>
 //       <View style={styles.onlineCounter}>
@@ -263,18 +1091,31 @@
 //     </View>
 //   );
 // 
-//   /**
-//    * Rendu d'un élément utilisateur
-//    */
-//  
+//   // Rendu d'un élément utilisateur
 //   const renderUserItem = ({ item: user }: { item: ARUser }) => {
 //     const isSending = isSendingSignal === user._id;
 //     const online = isUserOnline(user._id);
-//        const handleLike = () => {
-//   setShowHearts(true);
-//   handleLikeOnlineUser(user._id);
-// };
-//   
+//     
+//     const handleLikePress = (event: any) => {
+//       // Récupérer la position du clic
+//       const { pageX, pageY } = event.nativeEvent;
+//       
+//       // Créer plusieurs cœurs avec des délais différents (5 à 8 cœurs)
+//       const heartCount = 5 + Math.floor(Math.random() * 4);
+//       for (let i = 0; i < heartCount; i++) {
+//         setTimeout(() => {
+//           const heartId = Date.now() + i;
+//           setHearts(prev => [...prev, { id: heartId, x: pageX, y: pageY }]);
+//           setTimeout(() => {
+//             setHearts(prev => prev.filter(h => h.id !== heartId));
+//           }, 1200);
+//         }, i * 80);
+//       }
+//       
+//       // Appeler la fonction de like
+//       handleLikeOnlineUser(user._id);
+//     };
+//     
 //     // Mettre en évidence les termes recherchés
 //     const highlightSearch = (text: string): JSX.Element => {
 //       if (!searchQuery || searchQuery.length < 2) {
@@ -305,7 +1146,6 @@
 //         activeOpacity={0.7}
 //         testID={`user-card-${user._id}`}
 //       >
-//         
 //         {/* Photo de profil avec indicateur de statut */}
 //         <TouchableOpacity 
 //           style={styles.avatarContainer} 
@@ -337,7 +1177,7 @@
 //         {/* Informations utilisateur */}
 //         <TouchableOpacity 
 //           style={styles.userInfo}
-//          onPress={() => onUserPress(user._id)}
+//           onPress={() => onUserPress(user._id)}
 //         >
 //           {/* Nom et distance */}
 //           <View style={styles.nameRow}>
@@ -353,12 +1193,12 @@
 //               {user.precision?.icon}
 //             </Text>
 //             <Text style={styles.locationText} numberOfLines={1}>
-//              {user.precision?.fullName}
+//               {user.precision?.fullName}
 //             </Text>
 //           </View>
-//             <Text style={styles.locationText} numberOfLines={1}>
-//                {user.precision?.type}
-//             </Text>
+//           <Text style={styles.locationText} numberOfLines={1}>
+//             {user.precision?.type}
+//           </Text>
 // 
 //           {/* Intérêts communs */}
 //           {user.interests && user.interests.count > 0 && (
@@ -395,18 +1235,18 @@
 //           </Text>
 //         </TouchableOpacity>
 // 
-//         {/* Like zone */}
-//         <View style={styles.directionContainer}>
-//             <Ionicons onPress={handleLike} name="heart-outline" size={34} color={"yellow"}/>
-//         </View>
-//         
+//         {/* Like zone avec cœur */}
+//         <TouchableOpacity 
+//           style={styles.directionContainer}
+//           onPress={handleLikePress}
+//         >
+//           <Ionicons name="heart" size={34} color="#fed50a" />
+//         </TouchableOpacity>
 //       </TouchableOpacity>
 //     );
 //   };
 // 
-//   /**
-//    * Rendu de la liste vide
-//    */
+//   // Rendu de la liste vide
 //   const renderEmpty = () => (
 //     <View style={styles.emptyContainer}>
 //       <Text style={styles.emptyIcon}>
@@ -431,13 +1271,21 @@
 //     </View>
 //   );
 // 
-//   /**
-//    * Rendu du séparateur
-//    */
+//   // Rendu du séparateur
 //   const renderSeparator = () => <View style={styles.separator} />;
 // 
 //   return (
 //     <>
+//       {/* Cœurs flottants */}
+//       {hearts.map(heart => (
+//         <FloatingHeart
+//           key={heart.id}
+//           startX={heart.x}
+//           startY={heart.y}
+//           onComplete={() => {}}
+//         />
+//       ))}
+//       
 //       <FlatList
 //         data={filteredUsers}
 //         keyExtractor={(item) => item._id}
@@ -461,7 +1309,7 @@
 //         removeClippedSubviews={true}
 //       />
 //      
-//       {/* {/* Modal de profil public - } */}
+//       {/* Modal de profil public */}
 //       <Modal
 //         visible={isUserProfileVisible}
 //         transparent
@@ -469,11 +1317,6 @@
 //         onRequestClose={handleCloseProfile}
 //       >
 //         <View style={styles.modalContainer}>
-//           {/* <View style={styles.modalHeader}>
-//             <TouchableOpacity onPress={handleCloseProfile} style={styles.closeButton}>
-//               <Ionicons name="close" size={24} color="#fff" />
-//             </TouchableOpacity>
-//           </View> */}
 //           {selectedUserId && (
 //             <PublicProfileScreen 
 //               userId={selectedUserId} 
@@ -774,9 +1617,24 @@
 //     justifyContent: 'center',
 //     alignItems: 'center',
 //   },
+//   // Animation des cœurs
+//   floatingHeart: {
+//     position: 'absolute',
+//     zIndex: 1000,
+//     pointerEvents: 'none',
+//   },
+//   heartText: {
+//     fontSize: 28,
+//     textShadowColor: 'rgba(0,0,0,0.3)',
+//     textShadowOffset: { width: 1, height: 1 },
+//     textShadowRadius: 2,
+//   },
 // });
 // 
 // export default ARRadarView;
+
+// ARRadarView.tsx - Version mise à jour avec appels audio/vidéo
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -789,13 +1647,15 @@ import {
   Dimensions,
   TextInput,
   Modal,
-  Animated
+  Animated,
+  Alert
 } from "react-native";
 import { useSocket } from "../hooks/useSocket";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import PublicProfileScreen from "./PublicProfileScreen";
 import { userAPI } from "@/services/api";
+import { useWebRTC } from "../hooks/webrtc/useCall"; 
 
 const { width, height } = Dimensions.get("window");
 
@@ -832,16 +1692,24 @@ export interface UserListViewProps {
   ListHeaderComponent?: React.ReactElement;
   onSearch?: (query: string) => void;
   showSearchBar?: boolean;
+  currentUser?: { _id: string; username: string; profilePicture?: string }; // Ajout du currentUser
 }
 
-// Composant d'animation de cœur qui part du point de clic
+// Type pour les actions disponibles par utilisateur
+interface UserActionMenu {
+  userId: string;
+  username: string;
+  isVisible: boolean;
+  position: { x: number; y: number };
+}
+
+// Composant d'animation de cœur
 const FloatingHeart = ({ startX, startY, onComplete }: { startX: number; startY: number; onComplete: () => void }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(0.5)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   
-  // Direction aléatoire (légèrement à gauche ou à droite)
   const randomX = (Math.random() - 0.5) * 80;
   
   useEffect(() => {
@@ -896,6 +1764,97 @@ const FloatingHeart = ({ startX, startY, onComplete }: { startX: number; startY:
   );
 };
 
+// Composant Modal pour les actions rapides
+const QuickActionModal: React.FC<{
+  visible: boolean;
+  user: ARUser | null;
+  position: { x: number; y: number };
+  onClose: () => void;
+  onSignal: (userId: string) => void;
+  onAudioCall: (userId: string) => void;
+  onVideoCall: (userId: string) => void;
+  onProfile: (userId: string) => void;
+}> = ({ visible, user, position, onClose, onSignal, onAudioCall, onVideoCall, onProfile }) => {
+  if (!visible || !user) return null;
+
+  // Calculer la position du modal pour éviter qu'il ne sorte de l'écran
+  const modalWidth = 200;
+  const modalHeight = 280;
+  let left = position.x - modalWidth / 2;
+  let top = position.y - modalHeight - 10;
+
+  // Ajuster si le modal sort de l'écran
+  if (left < 10) left = 10;
+  if (left + modalWidth > width - 10) left = width - modalWidth - 10;
+  if (top < 100) top = position.y + 50; // Afficher en dessous si pas assez d'espace
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay} 
+        activeOpacity={1} 
+        onPress={onClose}
+      >
+        <View style={[styles.quickActionModal, { left, top }]}>
+          {/* En-tête avec nom d'utilisateur */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalUsername}>@{user.username}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Boutons d'action */}
+          <TouchableOpacity 
+            style={styles.modalAction}
+            onPress={() => { onProfile(user._id); onClose(); }}
+          >
+            <View style={[styles.modalIconBg, { backgroundColor: '#007AFF' }]}>
+              <Ionicons name="person" size={22} color="#fff" />
+            </View>
+            <Text style={styles.modalActionText}>Voir le profil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.modalAction}
+            onPress={() => { onSignal(user._id); onClose(); }}
+          >
+            <View style={[styles.modalIconBg, { backgroundColor: '#FF9500' }]}>
+              <Ionicons name="flash" size={22} color="#fff" />
+            </View>
+            <Text style={styles.modalActionText}>Envoyer un signal</Text>
+          </TouchableOpacity>
+
+          {/* <TouchableOpacity 
+            style={styles.modalAction}
+            onPress={() => { onAudioCall(user._id); onClose(); }}
+          >
+            <View style={[styles.modalIconBg, { backgroundColor: '#34C759' }]}>
+              <Ionicons name="call" size={22} color="#fff" />
+            </View>
+            <Text style={styles.modalActionText}>Appel audio</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.modalAction}
+            onPress={() => { onVideoCall(user._id); onClose(); }}
+          >
+            <View style={[styles.modalIconBg, { backgroundColor: '#5856D6' }]}>
+              <Ionicons name="videocam" size={22} color="#fff" />
+            </View>
+            <Text style={styles.modalActionText}>Appel vidéo</Text>
+          </TouchableOpacity> */}
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
 const ARRadarView: React.FC<UserListViewProps> = ({
   users,
   isSendingSignal,
@@ -906,9 +1865,22 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   ListHeaderComponent,
   onSearch,
   showSearchBar = true,
+  currentUser, 
 }) => {
   const { onlineUsers, socket, isConnected } = useSocket();
   const router = useRouter();
+  
+  // Hook WebRTC pour les appels
+  const {
+    callState,
+    // incomingCall,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    isCallActive,
+    isIncomingCall
+  } = useWebRTC(currentUser || null);
   
   // États
   const [onlineCount, setOnlineCount] = useState(0);
@@ -919,9 +1891,44 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   const [userLocationPlace, setUserLocationPlace] = useState<string | undefined>(undefined);
   const [userDistance, setUserDistance] = useState<number | undefined>(undefined);
   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
-  
-  // État pour les cœurs flottants
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
+  
+  // État pour le menu d'actions rapides
+  const [actionMenu, setActionMenu] = useState<UserActionMenu | null>(null);
+
+  // Gérer les appels entrants
+  // useEffect(() => {
+  //   if (isIncomingCall && incomingCall) {
+  //     // Afficher une alerte pour accepter/refuser l'appel
+  //     Alert.alert(
+  //       'Appel entrant',
+  //       `${incomingCall.callerName} vous appelle en ${incomingCall.callType === 'video' ? 'vidéo' : 'audio'}`,
+  //       [
+  //         {
+  //           text: 'Refuser',
+  //           style: 'destructive',
+  //           onPress: () => rejectCall()
+  //         },
+  //         {
+  //           text: 'Accepter',
+  //           style: 'default',
+  //           onPress: () => {
+  //             acceptCall();
+  //             // Naviguer vers l'écran d'appel
+  //             router.push({
+  //               pathname: '/(main)/(asmay)/call',
+  //               params: {
+  //                 callType: incomingCall.callType,
+  //                 isIncoming: 'true',
+  //                 callId: incomingCall.callId
+  //               }
+  //             });
+  //           }
+  //         }
+  //       ]
+  //     );
+  //   }
+  // }, [isIncomingCall, incomingCall]);
 
   // Mettre à jour le compteur en ligne
   useEffect(() => {
@@ -958,7 +1965,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       setSearchMode('local');
     }
   };
-
   // Gestionnaire d'ouverture de profil
   const handleOpenProfile = (userId: string) => {
     const user = users.find((user) => user._id === userId);
@@ -969,18 +1975,112 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     setUserDistance(distance);
     setIsUserProfileVisible(true);
   };
-
   // Gestionnaire de fermeture de profil
   const handleCloseProfile = () => {
     setIsUserProfileVisible(false);
     setUserLocationPlace(undefined);
     setSelectedUserId(null);
   };
+  // Gestionnaire d'envoi de signal
+  const handleSendSignal = (userId: string) => {
+    onUserPress(userId);
+  };
+  // Gestionnaire d'appel audio
+  const handleAudioCall = (userId: string) => {
+    if (!currentUser) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour passer un appel');
+      console.log("user courant est :",currentUser);
+      
+      return;
+    }
 
-  // Aimer la présence en ligne d'un utilisateur avec animation
-  const handleLikeOnlineUser = async (userId: string) => {
+    const user = users.find(u => u._id === userId);
+    if (!user) return;
+
+    // // Vérifier si l'utilisateur est en ligne
+    // if (!isUserOnline(userId)) {
+    //   Alert.alert(
+    //     'Utilisateur hors ligne',
+    //     `${user.username} n'est pas en ligne actuellement.`,
+    //     [{ text: 'OK' }]
+    //   );
+    //   return;
+    // }
+
+    // Initier l'appel et naviguer
+    initiateCall(userId, 'audio');
+    router.push({
+      pathname: '/(main)/(asmay)/call',
+      params: {
+        targetUserId: userId,
+        callType: 'audio',
+        callerName: currentUser.username
+      }
+    });
+  };
+  // Gestionnaire d'appel vidéo
+  const handleVideoCall = (userId: string) => {
+    if (!currentUser) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour passer un appel');
+      return;
+    }
+
+    const user = users.find(u => u._id === userId);
+    if (!user) return;
+
+    // Vérifier si l'utilisateur est en ligne
+    // if (!isUserOnline(userId)) {
+    //   Alert.alert(
+    //     'Utilisateur hors ligne',
+    //     `${user.username} n'est pas en ligne actuellement.`,
+    //     [{ text: 'OK' }]
+    //   );
+    //   return;
+    // }
+
+    // Initier l'appel et naviguer
+    initiateCall(userId, 'video');
+    router.push({
+      pathname: '/(main)/(asmay)/call',
+      params: {
+        targetUserId: userId,
+        callType: 'video',
+        callerName: currentUser.username
+      }
+    });
+  };
+  // Ouvrir le menu d'actions rapides
+  const openActionMenu = (user: ARUser, event: any) => {
+    const { pageX, pageY } = event.nativeEvent;
+    setActionMenu({
+      userId: user._id,
+      username: user.username,
+      isVisible: true,
+      position: { x: pageX, y: pageY }
+    });
+  };
+  // Fermer le menu d'actions
+  const closeActionMenu = () => {
+    setActionMenu(null);
+  };
+  // Aimer la présence en ligne d'un utilisateur
+  const handleLikeOnlineUser = async (userId: string, event?: any) => {
+    // Si l'événement est fourni, créer l'animation de cœur
+    if (event) {
+      const { pageX, pageY } = event.nativeEvent;
+      const heartCount = 5 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < heartCount; i++) {
+        setTimeout(() => {
+          const heartId = Date.now() + i;
+          setHearts(prev => [...prev, { id: heartId, x: pageX, y: pageY }]);
+          setTimeout(() => {
+            setHearts(prev => prev.filter(h => h.id !== heartId));
+          }, 1200);
+        }, i * 80);
+      }
+    }
+
     try {
-      // like via socket
       if (socket && isConnected) {
         socket.emit("like_online_user", userId);
       } else {
@@ -990,12 +2090,10 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       console.error("Error to like this user:", error);
     }
   };
-
   // Vérifier si un utilisateur est en ligne
   const isUserOnline = (userId: string): boolean => {
     return onlineUsers?.includes(userId) || false;
   };
-
   // Obtient la couleur en fonction de la distance
   const getDistanceColor = (distance: number): string => {
     if (distance <= 25) return '#FF3B30';
@@ -1004,31 +2102,14 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     if (distance <= 500) return '#007AFF';
     return '#8E8E93';
   };
-
-  // Obtient la flèche directionnelle
-  const getDirectionArrow = (bearing: number): string => {
-    const normalizedBearing = ((bearing % 360) + 360) % 360;
-    
-    if (normalizedBearing >= 337.5 || normalizedBearing < 22.5) return '⬆️';
-    if (normalizedBearing >= 22.5 && normalizedBearing < 67.5) return '↗️';
-    if (normalizedBearing >= 67.5 && normalizedBearing < 112.5) return '➡️';
-    if (normalizedBearing >= 112.5 && normalizedBearing < 157.5) return '↘️';
-    if (normalizedBearing >= 157.5 && normalizedBearing < 202.5) return '⬇️';
-    if (normalizedBearing >= 202.5 && normalizedBearing < 247.5) return '↙️';
-    if (normalizedBearing >= 247.5 && normalizedBearing < 292.5) return '⬅️';
-    if (normalizedBearing >= 292.5 && normalizedBearing < 337.5) return '↖️';
-    return '⬆️';
-  };
-
   // Formate la distance
   const formatDistance = (distance: number): string => {
     if (distance < 1000) {
-      return `${Math.round(distance)} m`;
+      return `${Math.round(distance)}m`;
     } else {
-      return `${(distance / 1000).toFixed(0)} km`;
+      return `${(distance / 1000).toFixed(0)}km`;
     }
   };
-
   // Calcule le temps écoulé depuis la dernière activité
   const getLastActiveText = (lastActive?: Date): string => {
     if (!lastActive) return '';
@@ -1037,7 +2118,8 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     const diffMs = now.getTime() - new Date(lastActive).getTime();
     const diffMins = Math.floor(diffMs / 60000);
     
-    if (diffMins < 1) return 'En ligne';
+    if (diffMins === 0 ) return '● En ligne';
+    if (diffMins > 0 && diffMins < 1 ) return `Il y a ${diffMins}s`;
     if (diffMins < 60) return `Il y a ${diffMins} min`;
     
     const diffHours = Math.floor(diffMins / 60);
@@ -1046,7 +2128,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     const diffDays = Math.floor(diffHours / 24);
     return `Il y a ${diffDays} j`;
   };
-
   // Rendu de la barre de recherche
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
@@ -1078,7 +2159,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       )}
     </View>
   );
-
   // Rendu de l'en-tête avec le compteur
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -1090,30 +2170,17 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       </View>
     </View>
   );
-
   // Rendu d'un élément utilisateur
   const renderUserItem = ({ item: user }: { item: ARUser }) => {
     const isSending = isSendingSignal === user._id;
-    const online = isUserOnline(user._id);
+    const online = user.lastActive
     
     const handleLikePress = (event: any) => {
-      // Récupérer la position du clic
-      const { pageX, pageY } = event.nativeEvent;
-      
-      // Créer plusieurs cœurs avec des délais différents (5 à 8 cœurs)
-      const heartCount = 5 + Math.floor(Math.random() * 4);
-      for (let i = 0; i < heartCount; i++) {
-        setTimeout(() => {
-          const heartId = Date.now() + i;
-          setHearts(prev => [...prev, { id: heartId, x: pageX, y: pageY }]);
-          setTimeout(() => {
-            setHearts(prev => prev.filter(h => h.id !== heartId));
-          }, 1200);
-        }, i * 80);
-      }
-      
-      // Appeler la fonction de like
-      handleLikeOnlineUser(user._id);
+      handleLikeOnlineUser(user._id, event);
+    };
+
+    const handleMorePress = (event: any) => {
+      openActionMenu(user, event);
     };
     
     // Mettre en évidence les termes recherchés
@@ -1137,15 +2204,10 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     };
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.userCard,
-          online && styles.userCardOnline
-        ]}
-        disabled={isSending}
-        activeOpacity={0.7}
-        testID={`user-card-${user._id}`}
-      >
+      <View style={[
+        styles.userCard,
+        online && styles.userCardOnline
+      ]}>
         {/* Photo de profil avec indicateur de statut */}
         <TouchableOpacity 
           style={styles.avatarContainer} 
@@ -1165,7 +2227,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
             </View>
           )}
           
-          {online && <View style={styles.onlineIndicator} />}
+          {/* {online && <View style={styles.onlineIndicator} />} */}
           
           {isSending && (
             <View style={styles.sendingBadge}>
@@ -1182,7 +2244,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           {/* Nom et distance */}
           <View style={styles.nameRow}>
             {highlightSearch(user.username)}
-            <Text style={[styles.distance, { color: getDistanceColor(user.distance) }]}>
+            <Text style={styles.distance}>
               {formatDistance(user.distance)}
             </Text>
           </View>
@@ -1197,7 +2259,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
             </Text>
           </View>
           <Text style={styles.locationText} numberOfLines={1}>
-            {user.precision?.type}
+            {user.precision?.type.toUpperCase()}
           </Text>
 
           {/* Intérêts communs */}
@@ -1207,7 +2269,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
                 {user.interests.count} intérêt{user.interests.count > 1 ? 's' : ''} commun{user.interests.count > 1 ? 's' : ''}
               </Text>
               
-              {/* Aperçu des intérêts */}
               {user.interests.common && user.interests.common.length > 0 && (
                 <View style={styles.interestsPreview}>
                   {user.interests.common.slice(0, 2).map((interest: string, idx: number) => (
@@ -1226,39 +2287,71 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           )}
 
           {/* Statut en ligne ou dernière activité */}
-          <Text style={styles.statusText}>
-            {online ? (
-              <Text style={styles.onlineText}>● En ligne</Text>
-            ) : (
-              user.lastActive && getLastActiveText(user.lastActive)
-            )}
-          </Text>
+          {/* <Text style={styles.statusText}> */}
+            {/* {online && getLastActiveText(online) */}
+            {/* //  ? ( */}
+            {/* //   <Text style={styles.onlineText}>● En ligne</Text> */}
+            {/* // ) : ( */}
+            {/* // ) */}
+          {/* </Text> */}
         </TouchableOpacity>
 
-        {/* Like zone avec cœur */}
-        <TouchableOpacity 
-          style={styles.directionContainer}
-          onPress={handleLikePress}
-        >
-          <Ionicons name="heart" size={34} color="#fed50a" />
-        </TouchableOpacity>
-      </TouchableOpacity>
+        {/* Zone d'actions */}
+        <View style={styles.actionsContainer}>
+           {/* Bouton Appel Audio - visible seulement si en ligne */}
+          {/* {online && (
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={() => handleAudioCall(user._id)}
+            >
+              <Ionicons name="call" size={22} color="#34C759" />
+            </TouchableOpacity>
+          )} */}
+
+          {/* Bouton Appel Vidéo - visible seulement si en ligne */}
+          {/* {online && (
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={() => handleVideoCall(user._id)}
+            >
+              <Ionicons name="videocam" size={22} color="#5856D6" />
+            </TouchableOpacity>
+          )}  */}
+
+        
+          {/* Bouton Plus d'options */}
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={handleMorePress}
+          >
+            <Ionicons name="ellipsis-vertical" size={25} color="rgb(251, 247, 247)" />
+          </TouchableOpacity>
+            {/* Bouton Like */}
+          <TouchableOpacity 
+            style={styles.likeButton}
+            onPress={handleLikePress}
+          >
+            <Ionicons name="heart" size={28} color="#fed50a" />
+          </TouchableOpacity>
+
+        </View>
+      </View>
     );
   };
-
   // Rendu de la liste vide
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>
-        {searchQuery.length > 0 ? '🔍' : '👥'}
+        {searchQuery.length > 0 ? '🔍' :  <Ionicons name="people-circle" size={90} color="#0b0b0b" style={styles.searchIcon} />
+        }
       </Text>
       <Text style={styles.emptyTitle}>
-        {searchQuery.length > 0 ? 'Aucun résultat' : 'Aucun utilisateur trouvé'}
+        {searchQuery.length > 0 ? 'Aucun résultat' : `Votre Asmay va vous réjoindre tout de suite ici, êtes-vous Prêt ?`}
       </Text>
       <Text style={styles.emptyText}>
         {searchQuery.length > 0 
           ? `Aucun utilisateur ne correspond à "${searchQuery}"`
-          : 'Élargissez votre recherche ou réessayez plus tard'}
+          : `Glissez votre main sur l'écran vers le bas pour lancer la recherche`}
       </Text>
       {searchQuery.length > 0 && (
         <TouchableOpacity 
@@ -1270,9 +2363,12 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       )}
     </View>
   );
-
   // Rendu du séparateur
   const renderSeparator = () => <View style={styles.separator} />;
+  // Trouver l'utilisateur sélectionné pour le menu d'actions
+  const selectedUserForMenu = actionMenu 
+    ? users.find(u => u._id === actionMenu.userId) || null
+    : null;
 
   return (
     <>
@@ -1285,6 +2381,36 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           onComplete={() => {}}
         />
       ))}
+      
+      {/* Menu d'actions rapides */}
+      <QuickActionModal
+        visible={actionMenu?.isVisible || false}
+        user={selectedUserForMenu}
+        position={actionMenu?.position || { x: 0, y: 0 }}
+        onClose={closeActionMenu}
+        onSignal={handleSendSignal}
+        onAudioCall={handleAudioCall}
+        onVideoCall={handleVideoCall}
+        onProfile={handleOpenProfile}
+      />
+
+      {/* Indicateur d'appel actif */}
+      {isCallActive && (
+        <View style={styles.activeCallBanner}>
+          <View style={styles.activeCallContent}>
+            <View style={styles.activeCallIndicator}>
+              <View style={styles.pulsingDot} />
+              <Text style={styles.activeCallText}>Appel en cours</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.returnToCallButton}
+              onPress={() => router.push('/(main)/(asmay)/call')}
+            >
+              <Text style={styles.returnToCallText}>Retourner à l'appel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       
       <FlatList
         data={filteredUsers}
@@ -1331,7 +2457,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   );
 };
 
-// Styles
+// Styles mis à jour
 const styles = StyleSheet.create({
   listContainer: {
     paddingTop: 16,
@@ -1489,8 +2615,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   distance: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
+    color:"white"
   },
   locationRow: {
     flexDirection: 'row',
@@ -1500,10 +2627,12 @@ const styles = StyleSheet.create({
   locationIcon: {
     fontSize: 14,
     marginRight: 4,
+    fontWeight:"bold"
   },
   locationText: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(255, 255, 255, 0.94)',
     fontSize: 10,
+    fontWeight:"bold",
     flex: 1,
   },
   interestsContainer: {
@@ -1541,21 +2670,140 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   onlineText: {
-    color: '#34C759',
+    color: '#fdfdfd',
     fontWeight: '600',
   },
-  directionContainer: {
+  // Nouveaux styles pour les actions
+  actionsContainer: {
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    minWidth: 25,
+    gap: 8,
+  },
+  callButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
-    minWidth: 50,
+    alignItems: 'center',
   },
-  directionArrow: {
-    fontSize: 24,
+  likeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  bearing: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 10,
-    marginTop: 2,
+  moreButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Modal overlay
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  quickActionModal: {
+    position: 'absolute',
+    width: 220,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 16,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalUsername: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  modalAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  modalIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalActionText: {
+    color: '#fff',
+    fontSize: 15,
+  },
+  // Bannière d'appel actif
+  activeCallBanner: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    right: 16,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#34C759',
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  activeCallContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activeCallIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pulsingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#34C759',
+    marginRight: 8,
+  },
+  activeCallText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  returnToCallButton: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  returnToCallText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
@@ -1565,7 +2813,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   emptyIcon: {
-    fontSize: 60,
+    fontSize: 80,
     marginBottom: 16,
   },
   emptyTitle: {
@@ -1576,7 +2824,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'hsla(0, 5%, 96%, 0.94)',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 20,
@@ -1600,22 +2848,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#203447ff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingTop: 50,
-    paddingRight: 20,
-    paddingBottom: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   // Animation des cœurs
   floatingHeart: {

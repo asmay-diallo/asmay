@@ -52,7 +52,7 @@ setUnreadMessage(unread)
       <Tabs.Screen
         name="index"
         options={{
-          title: "Asmay",
+          title: "AsMay",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "heart" : "heart-outline"} 
@@ -63,16 +63,22 @@ setUnreadMessage(unread)
         }}
       />
       <Tabs.Screen
-        name="chat/videoCall"
+        name="call"
          options={{ 
          headerShown: false,
          href: null,
-    // presentation: 'modal' // Pour un effet modal
+              title: "Appel",
+                tabBarIcon: ({ color, size, focused }) => (
+                  <Ionicons 
+                    name={focused ? "call" : "call-outline"} 
+                    size={size} 
+                    color={color} 
+                  />),
          }}   />
          <Tabs.Screen
               name="chat/[id]"
               options={{
-                href: null, //  Cacher de la tab bar car c'est une page détail
+                href: null, 
                 title: "Chat",
                 tabBarIcon: ({ color, size, focused }) => (
                   <Ionicons 
@@ -87,7 +93,7 @@ setUnreadMessage(unread)
       <Tabs.Screen
         name="message"
         options={{
-          title: "Chats",
+          title: "cHaTs",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "chatbubbles" : "chatbubbles-outline"} 
@@ -104,7 +110,7 @@ setUnreadMessage(unread)
       <Tabs.Screen
         name="notifications"
         options={{
-          title: "Signaux",
+          title: "siGnaLs",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "notifications" : "notifications-outline"} 
@@ -119,7 +125,7 @@ setUnreadMessage(unread)
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Moi",
+          title: "nE",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? "person" : "person-outline"} 

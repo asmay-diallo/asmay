@@ -675,7 +675,11 @@ import { useAudioPlayer } from "expo-audio";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Location from "expo-location";
 import NetInfo from "@react-native-community/netinfo";
-import {useSelector} from 'react-redux'
+import {useDispatch,useSelector} from 'react-redux'
+import { setConnexionState } from "@/store/slices/connexionSlice";
+
+// Capteur de mouvements , d'accélérations 
+import { Gyroscope, Accelerometer} from "expo-sensors"
 
 // TanStack Query hooks
 import { useNearbyUsersQuery, useUpdateLocation } from "../../../hooks/queries/useNearbyUserQuery";
@@ -693,6 +697,8 @@ export default function RadarScreen() {
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [networkConnected, setNetworkConnected] = useState(true);
+  const [networkEnabled, setNetworkEnabled] = useState(true)
+  const [isWifiEnabled, setIsWifiEnabled] = useState(true)
   const [isSendingSignal, setIsSendingSignal] = useState<string | null>(null);
   const [isShowingAd, setIsShowingAd] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -700,7 +706,9 @@ export default function RadarScreen() {
   const { user } = useAuth();
   const { socket, isConnected, sendSignal } = useSocket();
   const bannerRef = useRef<BannerAd>(null);
+  const dispatch = useDispatch()
   const likesCount = useSelector((state:any)=>state.likes.count)
+  const network = useSelector((state:any)=>state.connexion.internetState)
   //  TanStack Query
   const { data: nearbyUsers = [], isLoading, refetch } = useNearbyUsersQuery(
     currentLocation?.latitude || 0,
@@ -734,8 +742,8 @@ export default function RadarScreen() {
       Location.watchPositionAsync(
         { 
           accuracy: Location.Accuracy.Highest, 
-          timeInterval: 150000, // dans 3 minutes 
-          distanceInterval: 0.5 // par 1 mètre 
+          timeInterval: 50000, 
+          distanceInterval: 5 
          }, 
         async (loc) => {
           const updatedLocation = { 
@@ -743,7 +751,7 @@ export default function RadarScreen() {
              longitude: loc.coords.longitude };
           setCurrentLocation(updatedLocation);
           updateLocation(updatedLocation);
-          if (isVisible) refetch();
+          // if (isVisible) refetch();
         }
       );
     };
@@ -751,16 +759,45 @@ export default function RadarScreen() {
     if (permission?.granted) initLocation();
     else if (permission && !permission.granted) requestPermission();
   }, [permission]);
-
-
+// Surveillance de mouvements et d'accélerations ( Evennement )
+  // useEffect(()=>{
+  //  Gyroscope.addAdEventListener((data)=>{
+  //   console.log('Les données de la rotation (mouvement) :',data);
+  //   console.log('X : ' , data.x);
+  //   // Rotation gauche/droite
+  //   console.log('Y : ',data.y);
+  //   // Rotation avant/arrière 
+  //   console.log('Z : ',data.z);
+  //   // Rotation sur soi-même
+  //  })
+  //  Accelerometer.addAdEventListener((data)=>{
+  //   console.log("Les données de l'accélerations en G:" ,data);
+  //   console.log('X : ' , data.x);
+  //   // Gauche/droite
+  //   console.log('Y : ',data.y);
+  //   // Haut/bas
+  //   console.log('Z : ',data.z);
+  //   // Avant/arrière
+  //   
+  //  })
+  // },[])
   // Connexion réseau
+      
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => setNetworkConnected(!!state.isConnected));
+    
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      console.log("Etat de connection internet : ", state)
+      setNetworkConnected(!!state.isConnected)
+      setNetworkEnabled(!!state.isInternetReachable)
+      setIsWifiEnabled(!!state.isWifiEnabled)
+      }
+    );
     return () => unsubscribe();
   }, []);
   
   // Interstitial ad
   useEffect(() => {
+    
     const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => setLoaded(true));
     const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       setIsShowingAd(false);
@@ -826,7 +863,7 @@ export default function RadarScreen() {
                 // setNearbyUsers(prev => prev.filter(u => u._id !== userId));
               } catch (error: any) {
                 playErrorSound();
-                Alert.alert("Désolé", error.message);
+                Alert.alert("Ohhh Non !", error.message);
               } finally {
                 setIsSendingSignal(null);
               }
@@ -842,27 +879,28 @@ export default function RadarScreen() {
 
   const refreshUsers = () => { refetch(); };
   
-  if (!networkConnected) {
+  if (!networkConnected && !networkEnabled) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="cloud-offline" size={70} color="#fff" />
         <Text style={styles.loadingTitle}>Aucune connexion internet</Text>
-        <Text style={styles.loadingText}>Vérifiez votre connexion</Text>
+                <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+                 <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
       </View>
     );
   }
   
-  if (!permission?.granted) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Permissions requises</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={requestPermission}>
-          <Text style={styles.retryButtonText}>Autoriser</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  
+  // if (!permission?.granted) {
+  //   return (
+  //     <View style={styles.centerContainer}>
+  //       <Text style={styles.errorText}>Permissions requises</Text>
+  //       <TouchableOpacity style={styles.retryButton} onPress={requestPermission}>
+  //         <Text style={styles.retryButtonText}>Autoriser</Text>
+  //       </TouchableOpacity>
+  //     </View>
+  //   );
+  // }
+  // 
   return (
     <ImageBackground source={require("../../../assets/images/asmay-home.png")} resizeMode="cover" style={styles.container}>
       <ARRadarView
@@ -872,6 +910,7 @@ export default function RadarScreen() {
         currentLocation={currentLocation || { latitude: 0, longitude: 0 }}
         onRefresh={refreshUsers}
         refreshing={isLoading}
+        currentUser={user}
       />
       <View style={styles.likeControl}>
           <Ionicons name="heart" size={30} color="#fdf6fd" />
@@ -908,7 +947,7 @@ const styles = StyleSheet.create({
    color:"white",
     position: "absolute",
     top: 28, 
-    right: 10,
+    right: 8,
     fontSize:12,
     fontWeight:"bold"
 

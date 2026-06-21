@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "769430021582",
+    "project_id": "asmay-d9cda",
+    "storage_bucket": "asmay-d9cda.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:769430021582:android:778568ced0c90a41dd779f",
+        "android_client_info": {
+          "package_name": "com.asmay25.Asma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMdFczMd2ewHgsoNiXrboewJPAXAxls1s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:769430021582:android:8a92e3bdf53a5910dd779f",
+        "android_client_info": {
+          "package_name": "com.asmay25.asmayi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMdFczMd2ewHgsoNiXrboewJPAXAxls1s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

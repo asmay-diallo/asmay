@@ -98,7 +98,7 @@ const NotificationsScreen: React.FC = () => {
     null
   );
   const [networkConnected, setNetworkConnected] = useState<boolean>(false);
-
+  const [networkEnabled, setNetworkEnabled] = useState(true)
 
   const bannerRef = useRef<BannerAd>(null);
 
@@ -136,18 +136,9 @@ const NotificationsScreen: React.FC = () => {
   useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       console.log("L'atat de connexion :",state);
-      
-      const isNowConnected = !!state.isConnected;
-      setNetworkConnected(isNowConnected);
-
-      if (isNowConnected) {
-        console.log(" Connexion rétablie - Traitement de la file...");
-        processRewardQueue().then((successCount) => {
-          if (successCount > 0) {
-            console.log(`✅ ${successCount} récompense(s) synchronisées`);
-          }
-        });
-      }
+          setNetworkConnected(!!state.isConnected);
+      setNetworkEnabled(!!state.isInternetReachable);
+   
     });
 
     return () => unsubscribeNetInfo();
@@ -289,7 +280,10 @@ const NotificationsScreen: React.FC = () => {
       });
 
       socket.on("signal_accepted", (data: any) => {
-        console.log(" Votre signal a été accepté!", data);
+        //  Recharger pour voir les changements
+        loadNotifications();
+      });
+      socket.on("signal_declined", (data: any) => {
         //  Recharger pour voir les changements
         loadNotifications();
       });
@@ -387,7 +381,7 @@ const NotificationsScreen: React.FC = () => {
       const errorMessage =
         error.response?.data?.message || "Impossible d'accepter le signal";
         playErrorSound()
-      Alert.alert("Désolé ⚠️!", errorMessage);
+      Alert.alert("Ohhh Non !", errorMessage);
 
       loadNotifications();
     } finally {
@@ -691,7 +685,7 @@ const NotificationsScreen: React.FC = () => {
     </View>
   );
   
- if (!networkConnected) {
+ if (!networkConnected && !networkEnabled) {
      return (
         <View style={styles.centerContainer}>
             <Ionicons

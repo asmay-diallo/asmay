@@ -11,6 +11,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  ImageBackground
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
@@ -93,7 +94,7 @@ export default function ProfileScreen() {
   //  Mettre à jour editedData quand authUser change
   useEffect(() => {
     if (authUser) {
-      console.log(" user chargé dépuis redux :",authUser);
+      // console.log(" user chargé dépuis redux :",authUser);
       
       setEditedData({
         username: authUser.username,
@@ -126,14 +127,13 @@ useEffect(() => {
     }, [])
   );
 
-
   const loadExchangeRate = async () => {
     setLoadingRate(true);
     try {
       const response = await userAPI.getExchangeRate();
       if (response.data.success && response.data.data) {
         setExchangeRate(response.data.data.rate);
-        console.log('💰 Taux de change chargé:', response.data.rate);
+        // console.log('💰 Taux de change chargé:', response.data.rate);
       }
     } catch (error) {
       // console.error('❌ Erreur chargement taux:', error);
@@ -161,7 +161,7 @@ useEffect(() => {
         await uploadImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert("Erreur", "Veuillez réessayer !");
+      Alert.alert("Connexion", "Veuillez réessayer !");
     }
   };
 
@@ -183,7 +183,7 @@ useEffect(() => {
         await uploadImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert("Erreur", "Veuillez réessayer !");
+      Alert.alert("Connexion", "Veuillez réessayer !");
     }
   };
 
@@ -202,11 +202,11 @@ useEffect(() => {
         privacySettings: editedData.privacySettings,
       };
 
-      await updateUser(updatedData); // ✅ Met à jour Redux ET AsyncStorage
+      await updateUser(updatedData); //Met à jour Redux ET AsyncStorage
       setIsEditing(false);
       
     } catch (error: any) {
-      let errorMessage = "Impossible de sauvegarder le profil";
+      let errorMessage = "Veuillez vérifier votre connexion internet et réessayer";
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
@@ -215,7 +215,7 @@ useEffect(() => {
         errorMessage = error.message;
       }
 
-      Alert.alert("Erreur", errorMessage);
+      Alert.alert("Connexion", errorMessage);
     }
   };
 
@@ -230,17 +230,18 @@ useEffect(() => {
           profilePicture: response.data.fullUrl,
         };
 
-        await updateUser(updatedData); // ✅ Met à jour Redux ET AsyncStorage
+        await updateUser(updatedData);
+         //  Met à jour Redux ET AsyncStorage
       }
     } catch (error: any) {
-      let errorMessage = "Impossible de télécharger l'image";
+      let errorMessage = "Veuillez vérifier votre connexion internet et réessayer";
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
         await logout()
       }
 
-      Alert.alert("Erreur", errorMessage);
+      Alert.alert("Connexion", errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -265,17 +266,17 @@ useEffect(() => {
         profilePicture: "",
       };
 
-      await updateUser(updatedData); // ✅ Met à jour Redux ET AsyncStorage
+      await updateUser(updatedData); //  Met à jour Redux ET AsyncStorage
 
     } catch (error: any) {
-      let errorMessage = "Impossible de supprimer la photo";
+      let errorMessage = "Veuillez vérifier votre connexion internet et réessayer";
 
       if (error.response?.status === 401) {
         errorMessage = "Session expirée. Veuillez vous reconnecter.";
         await logout()
       }
 
-      Alert.alert("Erreur", errorMessage);
+      Alert.alert("Connexion", errorMessage);
     }
   };
 
@@ -296,7 +297,7 @@ useEffect(() => {
     try {
       const response = await userAPI.getProfile();
       if (response.data.success && response.data.data?.coins) {
-        // ✅ Mettre à jour via updateUser pour synchroniser Redux
+        //  Mettre à jour via updateUser pour synchroniser Redux
         await updateUser({ coins: response.data.data.coins });
       }
     } catch (error) {
@@ -306,7 +307,7 @@ useEffect(() => {
     }
   };
 
-  // ✅ Afficher le chargement si authLoading est true
+  // Afficher le chargement si authLoading est true
   if (authLoading || !authUser) {
     return (
       <View style={styles.loadingContainer}>
@@ -316,23 +317,27 @@ useEffect(() => {
     );
   }
 
-  // ✅ Utiliser directement authUser (plus besoin de userData)
+  //  Utiliser directement authUser (plus besoin de userData)
   const user = authUser;
 
   return (
-    
-    <ScrollView style={styles.container}>
-           {/* Bannière publicitaire */}
+     <ImageBackground
+         source={require("../../../assets/images/asmay-home.png")}
+          resizeMode="cover"
+        style={styles.container}>
+            {/* Bannière publicitaire */}
                     <BannerAd 
                       ref={bannerRef} 
                       unitId={adUnitId} 
                       size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
                     />
-      <Text style={styles.title}>Mon Profil</Text>
+    <ScrollView >
+         
+      <Text style={styles.title}>Mon compte</Text>
 
       {/* Section Photo de profil */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photo de profil</Text>
+        <Text style={styles.sectionTitle}>Ma photo de profil</Text>
 
         <View style={styles.profilePictureContainer}>
           {user.profilePicture ? (
@@ -341,7 +346,7 @@ useEffect(() => {
                 source={{ uri: user.profilePicture }}
                 style={styles.profileImage}
               />
-              <Text style={styles.nameText}>{user.username}</Text>
+              <Text style={styles.nameText}>💛{user.username} </Text>
             </View>
           ) : (
             <View style={styles.profilePlaceholder}>
@@ -354,14 +359,14 @@ useEffect(() => {
           <View style={styles.profilePictureActions}>
             <Ionicons
               name={"image"} 
-              size={24} 
+              size={20} 
               color={"white"} 
               onPress={pickImage}
               style={styles.smallButton}
             />
             <Ionicons
               name={"camera"} 
-              size={24} 
+              size={20} 
               color={"white"} 
               onPress={takePhoto}
               style={styles.smallButton}
@@ -369,13 +374,36 @@ useEffect(() => {
             {user.profilePicture && (
               <Ionicons
                 name={"trash"} 
-                size={24} 
+                size={20} 
                 color={"white"} 
                 onPress={removeProfilePicture}
                 style={styles.smallButton}
               />
             )}
           </View>
+           {/* Statistiques */}
+      <View style={styles.statsSection}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{user.connections?.length || 0}</Text>
+          <Text style={styles.statLabel}>Relations</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{user.followers?.length || 0}</Text>
+          <Text style={styles.statLabel}>Abonnés</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{user.followings?.length || 0}</Text>
+          <Text style={styles.statLabel}>Suivis</Text>
+        </View>
+        <View style={styles.statDivider} />
+         <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{user.likers?.length || 0}</Text>
+          <Text style={styles.statLabel}>Likers</Text>
+        </View>
+      </View>
+
         </View>
       </View>
 
@@ -387,7 +415,7 @@ useEffect(() => {
       />
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Informations personnelles</Text>
+        <Text style={styles.sectionTitle}>Mes informations personnelles</Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>Nom d'utilisateur</Text>
@@ -449,7 +477,7 @@ useEffect(() => {
         <Text style={styles.sectionTitle}>Paramètres de confidentialité</Text>
 
         <View style={styles.switchField}>
-          <Text style={styles.switchLabel}>Profil visible</Text>
+          <Text style={styles.switchLabel}>Rendre mon profil public </Text>
           <Switch
             value={editedData.privacySettings.isVisible}
             onValueChange={(value) =>
@@ -461,7 +489,7 @@ useEffect(() => {
 
         <View style={styles.switchField}>
           <Text style={styles.switchLabel}>
-            Afficher seulement les intérêts communs
+            Afficher seulement nos intérêts communs
           </Text>
           <Switch
             value={editedData.privacySettings.showCommonInterestsOnly}
@@ -474,7 +502,7 @@ useEffect(() => {
 
         <View style={styles.switchField}>
           <Text style={styles.switchLabel}>
-            Être visible sur le Radar
+            Me rendre visible sur le Radar Asmay
           </Text>
           <Switch
             value={editedData.privacySettings.showOnRadar}
@@ -490,7 +518,7 @@ useEffect(() => {
         {isEditing ? (
           <>
             <Button
-              title="Sauvegarder"
+              title="Enregistrer"
               onPress={handleSave}
               style={styles.saveButton}
             />
@@ -517,7 +545,7 @@ useEffect(() => {
           </>
         ) : (
           <Button
-            title="Modifier le profil"
+            title="Modifier mon profil"
             onPress={() => setIsEditing(true)}
             style={styles.editButton}
           />
@@ -531,13 +559,14 @@ useEffect(() => {
         />
       </View>
     </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#203447ff",
+    // backgroundColor: "#203447ff",
     padding: 20,
     paddingTop:0,
   },
@@ -566,19 +595,18 @@ const styles = StyleSheet.create({
     height: 50,
     textAlign: "center",
     fontWeight: "bold",
-    fontSize: 30,
-    marginBottom: 20,
+    fontSize: 20,
     color: "rgb(233, 225, 225)",
   },
   section: {
     backgroundColor: "#203447ff",
     padding: 20,
     color: "white",
-    borderRadius: 10,
-    borderColor:"#bcda48",
-    borderWidth:1,
+    borderRadius: 15,
+    borderColor:"#b4c570",
+    borderWidth:5,
     marginBottom: 20,
-    // shadowColor: "#04a70c",
+    shadowColor: "#04a70c",
     shadowOffset: { width: 2, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -597,6 +625,35 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight:"bold",
     color: "#f1efefff",
+  },
+  statsSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginHorizontal: 20,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   loadingText: {
     // marginBottom:16,
@@ -689,7 +746,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 8,
     minHeight: 40,
-    fontSize: 40,
+    fontSize: 25,
     // backgroundColor:"#fff"
   },
   field: {
@@ -725,14 +782,26 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: "#007bff",
+    borderRadius:20,
+    width:"60%",
+    marginHorizontal:60
   },
   saveButton: {
     backgroundColor: "#28a745",
+     borderRadius:20,
+    width:"60%",
+    marginHorizontal:60
   },
   cancelButton: {
     backgroundColor: "#6c757d",
+     borderRadius:20,
+    width:"50%",
+    marginHorizontal:80
   },
   logoutButton: {
     backgroundColor: "#dc3545",
+     borderRadius:20,
+    width:"50%",
+    marginHorizontal:80
   },
 });

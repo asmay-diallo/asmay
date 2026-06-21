@@ -5,9 +5,8 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
-// const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
-const API_BASE_URL =`http://10.83.109.123:5000/api`
-console.log('🔧 API Base URL:', API_BASE_URL);
+const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
+// const API_BASE_URL =`http://192.168.85.123:5000/api`
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -29,19 +28,15 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log("🚨 AXIOS 401 DEBUG", {
-      url: error.config?.url,
-      method: error.config?.method,
-      headers: error.config?.headers,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
+ 
     return Promise.reject(error);
   }
 );
+
 // Interfaces
 export interface ApiResponse<T=any> {
   user?:User;
@@ -126,7 +121,7 @@ export const authAPI = {
   }) => api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', data),
 
   logout: () => api.post<ApiResponse<void>>('/auth/logout'),
-    sendVerification: (email:string, username:string) => 
+  sendVerification: (email:string, username:string) => 
     api.post('/auth/send-verification', { email, username }),
     
   verifyCode: (email:string, code:any) => 

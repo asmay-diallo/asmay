@@ -62,11 +62,13 @@ export default function MessagesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [networkConnected, setNetworkConnected] = useState(true);
+    const [networkEnabled, setNetworkEnabled] = useState(true)
 
   // Vérifier connexion réseau
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setNetworkConnected(!!state.isConnected);
+      setNetworkEnabled(!!state.isInternetReachable);
     });
     return () => unsubscribe();
   }, []);
@@ -109,7 +111,8 @@ export default function MessagesScreen() {
     const diffMs = now.getTime() - lastActiveDate.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     
-    if (diffMins < 1) return 'En ligne';
+    if (diffMins === 0 ) return '● En ligne'
+    if (diffMins > 0 && diffMins < 1 ) return `Il y a ${diffMins}s`;
     if (diffMins < 60) return `Il y a ${diffMins} min`;
     
     const diffHours = Math.floor(diffMins / 60);
@@ -158,9 +161,7 @@ export default function MessagesScreen() {
     const otherUser = getOtherUser(item);
     if (!otherUser || typeof otherUser !== 'object') return null;
 
-    const online = isUserOnline(otherUser._id);
-    const lastActiveText = getLastActiveText(otherUser.lastActive);
-    
+    const online = otherUser.lastActive
     //  Obtenir le vrai compteur
     const chatUnreadCount = getChatUnreadCount(item._id);
       console.log("Chat unreadCount : ",chatUnreadCount);
@@ -197,7 +198,7 @@ export default function MessagesScreen() {
               {otherUser.username}
             </Text>
             <Text style={[styles.statusText, online && styles.onlineText]}>
-              {online ? "● En ligne" : lastActiveText}
+              {online && getLastActiveText(online)}
             </Text>
           </View>
           <Text style={styles.lastMessage} numberOfLines={1}>
@@ -230,12 +231,13 @@ export default function MessagesScreen() {
     );
   };
 
-  if (!networkConnected) {
+  if (!networkConnected  && !networkEnabled) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="cloud-offline" size={70} color="#fff" />
         <Text style={styles.loadingTitle}>Aucune connexion internet</Text>
-        <Text style={styles.loadingText}>Vérifiez votre connexion</Text>
+        <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+         <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
       </View>
     );
   }

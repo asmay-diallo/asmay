@@ -74,9 +74,14 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
 
   // Nettoyage à la destruction
   useEffect(() => {
+    
     return () => {
       unloadSound();
     };
+  }, []);
+  useEffect(() => {
+   
+    
   }, []);
 
   // ==================== FONCTIONS UTILITAIRES ====================
@@ -89,8 +94,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
 
   const getFullUrl = (url: string): string => {
     if (url.startsWith('http')) return url;
-    return `http://192.168.195.123:5000${url}`;
-    // return `${process.env.EXPO_PUBLIC_API_UR}${url}`;
+    // return `http://192.168.195.123:5000${url}`;
+    return `${process.env.EXPO_PUBLIC_API_UR}${url}`;
   };
 
   const unloadSound = async () => {
@@ -133,14 +138,13 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   }, [duration, messageId, onPlayStop]);
 
   // ==================== CHARGEMENT ====================
-  const loadSound = useCallback(async () => {
+ const loadSound = useCallback(async () => {
     try {
       setPlayerState('loading');
       setError(null);
       
       // Décharger l'ancien son
       await unloadSound();
-// 
       const fullUrl = getFullUrl(audioUrl);
       console.log(`🎵 Chargement audio: ${messageId}`);
 
@@ -165,29 +169,31 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
       await newSound.setRateAsync(playbackSpeed, false);
       
       setPlayerState('ready');
+      console.log("Etat de lecteur : ", playerState)
       return true;
 
     } catch (error) {
-      // console.error("❌ Erreur chargement audio:", error);
+      console.error("❌ Erreur chargement audio:", error);
       setPlayerState('error');
       setError("Format audio non supporté");
       return false;
     }
   }, [audioUrl, messageId, playbackSpeed, onPlaybackStatusUpdate]);
 
-  // ==================== CONTRÔLES ====================
+        // ==================== CONTRÔLES ====================
   const playSound = useCallback(async () => {
     try {
       // Si pas de son ou erreur, recharger
       if (!soundRef.current || playerState === 'error') {
         const loaded = await loadSound();
-        if (!loaded) return;
+        if (!loaded) await loadSound();
       }
 
       // Vérifier que le son existe avant de jouer
       if (!soundRef.current) {
         setPlayerState('error');
         setError("Impossible de charger l'audio");
+        console.log("Ce son n'existe pas ")
         return;
       }
 
@@ -283,7 +289,6 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
       setPosition(newPosition);
       progressAnim.setValue(ratio);
       progressValue.current = ratio;
-
     } catch (error) {
       console.error("❌ Erreur seek:", error);
     }
@@ -327,6 +332,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   };
 
   // ==================== RENDU PRINCIPAL ====================
+  const idle = playerState ==='idle'
   const isLoading = playerState === 'loading';
   const isPlaying = playerState === 'playing';
   const isPaused = playerState === 'paused';
@@ -343,7 +349,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
         <Text style={styles.errorText} numberOfLines={1}>
           {error || "Audio non supporté"}
         </Text>
-        <TouchableOpacity onPress={() => setPlayerState('idle')} style={styles.retryButton}>
+        <TouchableOpacity onPress={loadSound} style={styles.retryButton}>
           <Ionicons name="refresh" size={16} color={isMyMessage ? "#fff" : "#007bff"} />
         </TouchableOpacity>
       </View>
@@ -373,7 +379,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
             <ActivityIndicator size="small" color={isMyMessage ? "#fff" : "#007bff"} />
           ) : (
             <Ionicons
-              name={isPlaying ? "pause" : "play"}
+              name={isReady ? "play" :isPlaying? "pause":"play"}
               size={20}
               color={isMyMessage ? "#fff" : "#007bff"}
             />

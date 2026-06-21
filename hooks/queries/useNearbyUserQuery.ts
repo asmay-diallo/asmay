@@ -27,9 +27,9 @@ export const useNearbyUsersQuery = (latitude: number, longitude: number, enabled
       return response.data.data.users as NearbyUser[];
     },
     enabled: enabled && !!latitude && !!longitude,
-    staleTime: 30 * 1000, // 30 secondes
-    gcTime: 2*60 * 1000, // 2 minutes
-    refetchInterval: 60*60 * 1000, // Recharge toutes les minutes
+    staleTime: 2 * 1000, // 30 secondes
+    gcTime: 5 * 1000, // 2 minutes
+    refetchInterval: 2*60 * 1000, // Recharge toutes les 2 minutes
   });
 };
 

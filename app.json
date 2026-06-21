@@ -44,27 +44,40 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+          "androidAppId": "ca-app-pub-5524198683293548~6412062690"
+        }
+      ],
+      ["expo-notifications",
+        {
+         "icon":"./assets/images/asmay-splash-screen.png",
+         "color":"#ffffff",
+         "defaultChannel":"default"
         }
       ],
       ["expo-build-properties",
-       {
-    "android": {
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
-      "minSdkVersion": 24
-    }
-  }
- ],
+        {
+          "android": {
+          "googleServicesFile": "./google-services.json",
+          "compileSdkVersion": 36,
+          "targetSdkVersion": 36,
+          "minSdkVersion": 24
+                },
+           "ios": {
+            "useFrameworks": "static"
+          
+             }
+         }
+       ],
       "expo-audio",
       "@stream-io/video-react-native-sdk",
      [ "@config-plugins/react-native-webrtc",
-    {
+        {
        
           "cameraPermission": "ASMAY réquit votre camera pour accéder à capture en ordre et transmet la vidéo ",
           "microphonePermission": "ASMAY requit votre  microphone pour accéder à capture en ordre  et transmet l'audio"
     
-    }]
+       }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

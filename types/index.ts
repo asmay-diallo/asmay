@@ -205,3 +205,86 @@ export interface VoiceMessageState {
   loading: boolean;
   error: string | null;
 }
+ //============== Appel ==============
+ export type CallType = 'audio' | 'video';
+export type CallState = 'idle' | 'calling' | 'incoming' | 'connecting' | 'connected' | 'ended';
+export type CallErrorCode = 'USER_NOT_FOUND' | 'USER_OFFLINE' | 'USER_BUSY' | 'SERVER_ERROR' | 'PERMISSION_DENIED';
+
+export interface CallerInfo {
+  username: string;
+  profilePicture?: string;
+}
+
+export interface IncomingCallData {
+  callId: string;
+  callerId: string;
+  callerName: string;
+  callerProfilePicture?: string;
+  calleeId:string,
+  calleeName:string,
+  calleeProfilePicture?:string,
+  callType: CallType;
+   offer: any;
+  timestamp: Date;
+}
+
+export interface CallError {
+  code: CallErrorCode;
+  message: string;
+}
+
+export interface CallInitiateData {
+  targetUserId: string;
+  callType: CallType;
+  callerInfo?: CallerInfo;
+}
+
+export interface CallAcceptData {
+  callId: string;
+  callerId: string;
+}
+
+export interface CallRejectData {
+  callId: string;
+  callerId: string;
+  reason?: string;
+}
+
+export interface CallEndData {
+  callId: string;
+  targetUserId: string;
+}
+
+export interface WebRTCSignalData {
+  callId: string;
+  targetUserId: string;
+}
+
+export interface WebRTCOfferData extends WebRTCSignalData {
+  offer: RTCSessionDescriptionInit;
+}
+
+export interface WebRTCAnswerData extends WebRTCSignalData {
+  answer: RTCSessionDescriptionInit;
+}
+
+export interface WebRTCIceCandidateData extends WebRTCSignalData {
+  candidate: RTCIceCandidateInit;
+}
+
+export interface CallToggleData {
+  targetUserId: string;
+  enabled: boolean;
+}
+
+export interface CurrentUser {
+  _id: string;
+  username: string;
+  profilePicture?: string;
+}
+
+export interface VideoCallRouteParams {
+  targetUserId: string;
+  currentUser: CurrentUser;
+  callType: CallType;
+}

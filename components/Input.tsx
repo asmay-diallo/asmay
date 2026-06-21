@@ -60,8 +60,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
     padding: 15,
-    borderTopRightRadius: 25,
-    borderBottomLeftRadius: 25,
+    borderRadius:15,
     borderWidth: 1.5,
     borderColor: "#b6b6b3ff",
     fontSize: 16,

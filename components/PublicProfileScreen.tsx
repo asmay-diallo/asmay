@@ -217,6 +217,7 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
         {profile.profilePicture ? (
           <Image 
             source={{ uri: profile.profilePicture }} 
+            defaultSource={require("../assets/images/asmay-home.png")}
             style={styles.avatar}
           />
         ) : (
@@ -253,7 +254,7 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{profile.connections?.length || 0}</Text>
-          <Text style={styles.statLabel}>Connexions</Text>
+          <Text style={styles.statLabel}>Relation</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
@@ -263,7 +264,7 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{profile.followings?.length || 0}</Text>
-          <Text style={styles.statLabel}>Abonnements</Text>
+          <Text style={styles.statLabel}>Suivis</Text>
         </View>
       </View>
 

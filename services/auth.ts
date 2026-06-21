@@ -103,7 +103,7 @@ export const saveUserData = async (user: User, token: string): Promise<void> => 
     // Configurer le header axios global
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    console.log(` Utilisateur ${user.username} (${user._id}) sauvegardé avec succès`);
+    // console.log(` Utilisateur ${user.username} (${user._id}) sauvegardé avec succès`);
     
     //  afficher tous les utilisateurs stockés
     const allUsers = await listAllUsers();
@@ -146,7 +146,7 @@ export const getUserData = async (): Promise<{ user: User | null; token: string 
       // Tentative de récupération depuis l'ancien format (pour migration)
       const oldUserData = await AsyncStorage.getItem(USER_KEY);
       if (oldUserData) {
-        console.log(' Tentative de migration depuis ancien format...');
+        // console.log(' Tentative de migration depuis ancien format...');
         const parsed = JSON.parse(oldUserData);
         
         // Si c'est un tableau, chercher l'utilisateur avec le bon ID
@@ -155,7 +155,7 @@ export const getUserData = async (): Promise<{ user: User | null; token: string 
           if (correctUser) {
             // Sauvegarder au nouveau format
             await AsyncStorage.setItem(userKey, JSON.stringify(correctUser));
-            console.log(` Utilisateur ${correctUser.username} migré avec succès`);
+            // console.log(` Utilisateur ${correctUser.username} migré avec succès`);
             return { user: correctUser, token };
           }
         }
@@ -165,8 +165,8 @@ export const getUserData = async (): Promise<{ user: User | null; token: string 
     }
 
     const user = JSON.parse(userData);
-    
-    console.log(` Utilisateur ${user.username} (${user._id}) chargé depuis AsyncStorage`);
+    // 
+    // console.log(` Utilisateur ${user.username} (${user._id}) chargé depuis AsyncStorage`);
     
     return {
       user: user,

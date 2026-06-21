@@ -142,7 +142,7 @@ export const useAuth = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   
-  // ✅ État depuis Redux
+  //  État depuis Redux
   const user = useSelector((state: any) => state.auth.user);
   const token = useSelector((state: any) => state.auth.token);
   const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);

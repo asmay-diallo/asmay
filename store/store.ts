@@ -12,6 +12,9 @@ import messageReducer from './slices/messageSlice';
 import voiceMessageReducer from './slices/voiceMessageSlice';
 import userProfileReducer from './slices/userProfileSlice';
 import likesReducer from "./slices/likesSlice"
+import incomingCallReducer from './slices/incomingCallSlice';
+import streamReducer from './slices/streamSlice'
+import connexionReducer from './slices/connexionSlice'
 
 // Types
 export interface RootState {
@@ -22,6 +25,9 @@ export interface RootState {
   voiceMessages: ReturnType<typeof voiceMessageReducer>;
   userProfile: ReturnType<typeof userProfileReducer>;
   likes:ReturnType<typeof likesReducer>;
+  incomingCall:ReturnType<typeof incomingCallReducer>;
+  stream:ReturnType<typeof streamReducer>;
+  connexion:ReturnType<typeof connexionReducer>;
 }
 
 export type AppDispatch = typeof store.dispatch;
@@ -30,7 +36,7 @@ export type AppDispatch = typeof store.dispatch;
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth','signals','chats','messages','voiceMessages','userProfile'] as const,
+  whitelist: ['auth'] as const,
 };
 
 const rootReducer = combineReducers({
@@ -40,7 +46,10 @@ const rootReducer = combineReducers({
   messages: messageReducer,
   voiceMessages: voiceMessageReducer,
   userProfile: userProfileReducer,
-  likes:likesReducer
+  likes:likesReducer,
+  incomingCall:incomingCallReducer,
+  stream:streamReducer,
+  connexion:connexionReducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -50,7 +59,8 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE','incomingCall/setIncomingCall'],
+        ignoredPaths: ['incomingCall.callData.offer'],
       },
     }),
 });

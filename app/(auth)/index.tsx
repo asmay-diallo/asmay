@@ -113,7 +113,7 @@ export default function LoginScreen() {
         error.message ||
         "Erreur de connexion au serveur";
 
-      Alert.alert("Erreur", errorMessage);
+      Alert.alert("Vous vous êtes trompés", errorMessage);
       // setError(errorMessage);
     } finally {
       setIsLoading(false);

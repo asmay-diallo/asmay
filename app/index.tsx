@@ -3,7 +3,6 @@ import { useAuth } from '../hooks/useAuth';
 import ScreenLoading from '../components/ScreenLoading';
 import {useEffect,useState} from "react"
 
-
 export default function Index() {
   const { isAuthenticated, loading } = useAuth();
    const [ready, setReady] = useState(false);

@@ -1,14 +1,14 @@
 
-
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
-import Toast, { ToastConfigParams } from 'react-native-toast-message';
 import { useAudioPlayer } from "expo-audio";
 import io, { Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { useRouter } from 'expo-router';
-import {useDispatch} from 'react-redux'
+import {useDispatch,useSelector} from 'react-redux'
 import { incrementLikes,setLastLike} from '../store/slices/likesSlice'
+
+import { popUserInfos,popSignalsInfos } from '@/config/actions';
 
 interface SignalResponse {
   success: boolean;
@@ -25,6 +25,7 @@ export const useSocket = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const { user, isAuthenticated,token } = useAuth();
   const dispatch = useDispatch();
+  //  const inComeCall = useSelector((state:any)=>state.inComeCalls.inComeCallData)
   const router = useRouter();
 
   const socketRef = useRef<Socket | null>(null);
@@ -42,30 +43,7 @@ const receivedNotificationsRef = useRef<Set<string>>(new Set());
     playerCorrect.seekTo(0); // Remet le son au début
     playerCorrect.play(); // Joue le son
   };
-  // Poper les infos de l'utilisateur qui a liké 
-const popUserInfos = useCallback((userData: { 
-  username: string; 
-  avatarUrl?: string; 
-  message?: string;
-   }) => {
-  Toast.show({
-    type: 'userInfos',
-    text1: "💛 Nouveau like",
-    text2: userData.username,
-    props: {
-      avatarUrl: userData.avatarUrl,
-      message: userData.message || 'Vous a envoyé un like',
-    },
-    position: "top",
-    visibilityTime: 5000,
-    autoHide: true,
-    swipeable: true,
-    onPress: () => {
-      console.log(`Navigation vers profil de ${userData.username}`);
-      // router.navigate(`/profile/${userId}`);
-    }
-  });
- }, []);
+ 
 
   const connectSocket = useCallback(() => {
     if (!isAuthenticated || !user || !token) {
@@ -84,9 +62,9 @@ const popUserInfos = useCallback((userData: {
     }
 
 
-    // const socketUrl =process.env.EXPO_PUBLIC_API_URL;
+    const socketUrl =process.env.EXPO_PUBLIC_API_URL;
 
-    const socketUrl ='http://10.83.109.123:5000'
+    // const socketUrl ='http://192.168.85.123:5000'
 
     // process.env.EXPO_PUBLIC_API_URL ||
   
@@ -154,8 +132,13 @@ const popUserInfos = useCallback((userData: {
     newSocket.on('new_signal', (signalData) => {
       
       console.log('📨 NOUVEAU SIGNAL REÇU EN TEMPS RÉEL!', signalData);
-      playSignalSound()
-      
+      // playSignalSound()
+      playCorrectSound()
+      popSignalsInfos({
+        username:signalData.fromUser.username,
+        avatarUrl:signalData.fromUser.profilePicture,
+        message:`${signalData.fromUser.username} vous a envoyé un signal`
+      })
       // Vérifier que le signal est pour l'utilisateur courant
       const isForCurrentUser = signalData.toUser === user._id;
       
@@ -210,13 +193,13 @@ const popUserInfos = useCallback((userData: {
     //  Écouter le refus des dignaux 
     newSocket.on('signal_declined',(data)=> {
         playCorrectSound()
-       Alert.alert('🎉 Ooops 🎉',`${data.declinedBy?.username} a refusé votre signal !`,
+       Alert.alert('🎉 Ooops 🎉',`${data.declinedBy?.username} a refusé votre signal ! Mais vous pouvez lui envoyer un nouveau signal encore`,
   [
     {
      text:"D'accord",style:"cancel"
     }
   ]
-)
+ )
 })
   // Écouter like de la présence d'un user en line 
     newSocket.on('user_online_liked',(data)=>{
@@ -224,31 +207,15 @@ const popUserInfos = useCallback((userData: {
 
         // les likes dans Redux 
         dispatch(incrementLikes())
-        dispatch(setLastLike())
+        dispatch(setLastLike(data))
      
-      // Créer un identifiant unique pour cette notification
-     const notificationId = `${data.likedByUser._id}-${Date.now()}`;
-  
-     // Vérifier si déjà reçu récemment (éviter les doublons)
-      if (receivedNotificationsRef.current.has(data.likedByUser._id)) {
-    return;
-     }
-  
-     // Ajouter à la liste des reçues
-      receivedNotificationsRef.current.add(data.likedByUser._id);
-  
-  // Nettoyer après 0.2 secondes
-  setTimeout(() => {
-    receivedNotificationsRef.current.delete(data.likedByUser._id);
-  }, 200);
-  
-    popUserInfos({
-    username: data.likedByUser.username,
-    avatarUrl: data.likedByUser.profilePicture, 
-    message: `${data.likedByUser.username} a aimé votre présence en ligne aimer en retour`
-  });
-  })
-    //  Écouter les statuts des utilisateurs
+       popUserInfos({
+       username: data.likedByUser.username,
+        avatarUrl: data.likedByUser.profilePicture, 
+        message: `${data.likedByUser.username} a aimé votre présence en ligne aimer en retour`
+        });
+    })
+     //  Écouter les statuts des utilisateurs
     newSocket.on('user_online', (data) => {
       setOnlineUsers(prev => 
         prev.includes(data.userId) ? prev : [...prev, data.userId]
