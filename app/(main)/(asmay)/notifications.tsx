@@ -30,6 +30,7 @@ import {useAuth} from "../../../hooks/useAuth"
 import { useAudioPlayer } from "expo-audio";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
+import Constants from 'expo-constants';
 import {
   addRewardToQueue,
   processRewardQueue,
@@ -78,11 +79,11 @@ interface NotificationItem extends Signal {
 // Configuration publicitaire
 const adUnitIdBan:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : process.env.ANDROID_BANNER_UNIT_ID;
+  : Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
 const adUnitIdRewarded:any = __DEV__
   ? TestIds.REWARDED
-  : process.env.ANDROID_REWARDED_AD_UNIT_ID;
+  : Constants.expoConfig?.extra?.ANDROID_REWARDED_AD_UNIT_ID;
 
 const rewarded = RewardedAd.createForAdRequest(adUnitIdRewarded, {
   keywords: ["fashion", "clothing"],

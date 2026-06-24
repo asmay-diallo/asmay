@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
+import Constants from 'expo-constants';
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 import { useAuth } from "../hooks/useAuth";
 import { userAPI } from "../services/api";
@@ -47,7 +47,7 @@ interface PublicProfileScreenProps {
 // Configuration publicitaire
 const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : process.env.ANDROID_BANNER_UNIT_ID;
+  :Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
 export default function PublicProfileScreen({ userId,userDistance,userPlace, onClose }: PublicProfileScreenProps) {
   const router = useRouter();

@@ -1883,6 +1883,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   } = useWebRTC(currentUser || null);
   
   // États
+    const [isOnlineConnected, setIsOnlineConnected] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredUsers, setFilteredUsers] = useState<ARUser[]>(users);
@@ -2287,13 +2288,10 @@ const ARRadarView: React.FC<UserListViewProps> = ({
           )}
 
           {/* Statut en ligne ou dernière activité */}
-          {/* <Text style={styles.statusText}> */}
-            {/* {online && getLastActiveText(online) */}
-            {/* //  ? ( */}
-            {/* //   <Text style={styles.onlineText}>● En ligne</Text> */}
-            {/* // ) : ( */}
-            {/* // ) */}
-          {/* </Text> */}
+          <Text style={styles.statusText}> 
+            {online && getLastActiveText(online) }
+              <Text style={styles.onlineText}>● En ligne</Text> 
+         </Text> 
         </TouchableOpacity>
 
         {/* Zone d'actions */}

@@ -17,7 +17,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
-import NetInfo  from "@react-native-community/netinfo";
+import Constants from 'expo-constants';
 import CoinDisplay from '@/components/CoinDisplay';
 import {  debugStorage } from '../../../services/auth';
 import Button from "../../../components/Button";
@@ -54,7 +54,7 @@ interface EditedData {
 // Configuration publicitaire
 const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  :process.env.ANDROID_BANNER_UNIT_ID;
+  :Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
 export default function ProfileScreen() {
   // UNE SEULE SOURCE DE VÉRITÉ de donnée

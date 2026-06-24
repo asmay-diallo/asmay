@@ -95,7 +95,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   const getFullUrl = (url: string): string => {
     if (url.startsWith('http')) return url;
     // return `http://192.168.195.123:5000${url}`;
-    return `${process.env.EXPO_PUBLIC_API_UR}${url}`;
+    return `${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}${url}`;
   };
 
   const unloadSound = async () => {

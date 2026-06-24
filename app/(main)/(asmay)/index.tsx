@@ -687,13 +687,13 @@ import { signalAPI } from "@/services/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
 import ARRadarView from "../../../components/ARRadarView";
+import Constants from 'expo-constants';
 
-const adUnitIdBan: any = __DEV__ ? TestIds.BANNER : process.env.ANDROID_BANNER_UNIT_ID;
-const adUnitIdInter: any = __DEV__ ? TestIds.INTERSTITIAL : process.env.ANDROID_INTERSTITIAL_UNIT_ID;
+const adUnitIdBan: any = __DEV__ ? TestIds.BANNER : Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
+const adUnitIdInter: any = __DEV__ ? TestIds.INTERSTITIAL : Constants.expoConfig?.extra?.ANDROID_INTERSTITIAL_UNIT_ID;
 const interstitial = InterstitialAd.createForAdRequest(adUnitIdInter);
 
-export default function RadarScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
+   const [permission, requestPermission] = useCameraPermissions();
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [networkConnected, setNetworkConnected] = useState(true);
@@ -759,29 +759,7 @@ export default function RadarScreen() {
     if (permission?.granted) initLocation();
     else if (permission && !permission.granted) requestPermission();
   }, [permission]);
-// Surveillance de mouvements et d'accélerations ( Evennement )
-  // useEffect(()=>{
-  //  Gyroscope.addAdEventListener((data)=>{
-  //   console.log('Les données de la rotation (mouvement) :',data);
-  //   console.log('X : ' , data.x);
-  //   // Rotation gauche/droite
-  //   console.log('Y : ',data.y);
-  //   // Rotation avant/arrière 
-  //   console.log('Z : ',data.z);
-  //   // Rotation sur soi-même
-  //  })
-  //  Accelerometer.addAdEventListener((data)=>{
-  //   console.log("Les données de l'accélerations en G:" ,data);
-  //   console.log('X : ' , data.x);
-  //   // Gauche/droite
-  //   console.log('Y : ',data.y);
-  //   // Haut/bas
-  //   console.log('Z : ',data.z);
-  //   // Avant/arrière
-  //   
-  //  })
-  // },[])
-  // Connexion réseau
+
       
   useEffect(() => {
     
@@ -843,14 +821,15 @@ export default function RadarScreen() {
                     `Salut ! Je suis ${user?.username}`
                   );
                   playSignalSound();
+                   if (loaded) {
+                     interstitial.show();
+                        }
                   Alert.alert("Bravo 🎉!",
                     result.delivered ?
                     `${targetUser.username} a réçu votre signal . Attendez sa réponse !`:
                       `Signal est envoyé et enregistré, mais ${targetUser.username} n'est pas connecté !`,[
-                        {text:"Okay",
-                               onPress:()=>{
-                              interstitial.show()
-                               }
+                        {text:"Okay"
+                             
                         }
                       ]
                   );

@@ -62,7 +62,7 @@ const receivedNotificationsRef = useRef<Set<string>>(new Set());
     }
 
 
-    const socketUrl =process.env.EXPO_PUBLIC_API_URL;
+    const socketUrl =Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
 
     // const socketUrl ='http://192.168.85.123:5000'
 

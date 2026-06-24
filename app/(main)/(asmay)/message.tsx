@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 import NetInfo from "@react-native-community/netinfo";
+import Constants from 'expo-constants';
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -34,7 +35,7 @@ import Input from "@/components/Input";
 // Configuration publicitaire
 const adUnitId:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  :process.env.ANDROID_BANNER_UNIT_ID;
+  :Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
 export default function MessagesScreen() {
   const router = useRouter();

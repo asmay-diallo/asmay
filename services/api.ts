@@ -1,11 +1,11 @@
 
 
 import axios from 'axios';
-import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
-const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
+const API_BASE_URL =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
 // const API_BASE_URL =`http://192.168.85.123:5000/api`
 export const api = axios.create({
   baseURL: API_BASE_URL,

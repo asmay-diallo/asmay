@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "ASMAY a besoin du microphone pour les messages vocaux et les appels",
+        "NSCameraUsageDescription": "ASMAY a besoin de la caméra pour les appels vidéo"
+      },
+      "bitcode": false
     },
     "android": {
       "adaptiveIcon": {
@@ -20,13 +25,42 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.asmay25.Asmayi"
+      "package": "com.asmay25.Asmayi",
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH",
+        "RECORD_AUDIO",
+        "CAMERA",
+        "MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH"
+      ]
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/asmay-icon.png"
     },
-    
+    "updates": {
+      "url": "https://u.expo.dev/2aafe30f-32a6-4758-ab63-d778f3639b6d",
+      "runtimeVersion": "1.0.0",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
     "plugins": [
       "expo-router",
       [
@@ -47,37 +81,42 @@
           "androidAppId": "ca-app-pub-5524198683293548~6412062690"
         }
       ],
-      ["expo-notifications",
+      [
+        "expo-notifications",
         {
-         "icon":"./assets/images/asmay-splash-screen.png",
-         "color":"#ffffff",
-         "defaultChannel":"default"
+          "icon": "./assets/images/asmay-splash-screen.png",
+          "color": "#ffffff",
+          "defaultChannel": "default"
         }
       ],
-      ["expo-build-properties",
+      [
+        "expo-build-properties",
         {
           "android": {
-          "googleServicesFile": "./google-services.json",
-          "compileSdkVersion": 36,
-          "targetSdkVersion": 36,
-          "minSdkVersion": 24
-                },
-           "ios": {
+            "googleServicesFile": "./google-services.json",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24
+          },
+          "ios": {
             "useFrameworks": "static"
-          
-             }
-         }
-       ],
-      "expo-audio",
-      "@stream-io/video-react-native-sdk",
-     [ "@config-plugins/react-native-webrtc",
+          }
+        }
+      ],
+      [
+        "expo-audio",
         {
-       
-          "cameraPermission": "ASMAY réquit votre camera pour accéder à capture en ordre et transmet la vidéo ",
-          "microphonePermission": "ASMAY requit votre  microphone pour accéder à capture en ordre  et transmet l'audio"
-    
-       }
-      ]
+          "microphonePermission": "ASMAY a besoin du microphone pour les messages vocaux"
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "ASMAY a besoin de la caméra pour les appels vidéo",
+          "microphonePermission": "ASMAY a besoin du microphone pour les appels audio"
+        }
+      ],
+      "react-native-fbads"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -85,9 +124,17 @@
     },
     "extra": {
       "router": {},
+      "EXPO_PUBLIC_API_URL": "https://asmay-f01783f773c1.herokuapp.com",
+      "ANDROID_APP_ID": "ca-app-pub-5524198683293548~6412062690",
+      "ANDROID_BANNER_UNIT_ID": "ca-app-pub-5524198683293548/2942750658",
+      "ANDROID_INTERSTITIAL_UNIT_ID": "ca-app-pub-5524198683293548/4120100955",
+      "ANDROID_REWARDED_AD_UNIT_ID": "ca-app-pub-5524198683293548/7728173478",
       "eas": {
         "projectId": "2aafe30f-32a6-4758-ab63-d778f3639b6d"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

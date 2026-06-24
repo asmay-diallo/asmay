@@ -2,7 +2,6 @@
 import { Stack } from "expo-router";
 import { Provider } from "react-redux";
 import { PersistGate } from 'redux-persist/integration/react';
-import ScreenLoading from '../components/ScreenLoading';
 import { store,persistor } from "../store/store";
 import mobileAds from "react-native-google-mobile-ads";
 import Toast from 'react-native-toast-message';
@@ -54,7 +53,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient} >
         <Provider store={store}>
-      <PersistGate  loading={<ScreenLoading />} persistor={persistor}>
+      <PersistGate   persistor={persistor}>
         <Stack screenOptions={
           {
              headerShown: false ,

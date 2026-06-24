@@ -1151,6 +1151,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Audio} from "expo-av";
 import { useAudioPlayer } from "expo-audio";
+import Constants from 'expo-constants';
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
 import { popMessagesInfos } from "@/config/actions";
 
@@ -1257,7 +1258,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const adUnitId: string = __DEV__
   ? TestIds.ADAPTIVE_BANNER
-  : (process.env.ANDROID_BANNER_UNIT_ID as string);
+  : (Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID as string);
 
 export default function ChatScreen(): React.JSX.Element {
   const dispatch = useDispatch();
@@ -1265,6 +1266,7 @@ export default function ChatScreen(): React.JSX.Element {
   const router = useRouter();
   const { user } = useAuth() as { user: User | null };
   const { socket, isConnected, onlineUsers } = useSocket();
+    const [isOnlineConnected, setIsOnlineConnected] = useState(false);
 
   // Hook Redux pour les messages
   const {
@@ -1330,6 +1332,12 @@ export default function ChatScreen(): React.JSX.Element {
     player.seekTo(0);
     player.play();
   };
+// ==================== MISE À JOUR DU STATUT EN LIGNE ====================
+  useEffect(() => {
+    if (otherUser && onlineUsers) {
+      setIsOnlineConnected(onlineUsers.includes(otherUser._id));
+    }
+  }, [onlineUsers, otherUser]);
 
   // ==================== ANIMATION TYPING DOTS ====================
   useEffect(() => {
@@ -1911,7 +1919,25 @@ export default function ChatScreen(): React.JSX.Element {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 70);
   };
-
+ // ==================== FORMATAGE ====================
+ const formatLastActive = (lastActive?: Date): string => {
+    if (!lastActive) return 'Jamais connecté';
+    
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(lastActive).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'En ligne';
+    if (diffMins < 60) return `Vu il y a ${diffMins} min`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Vu il y a ${diffHours} h`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `Vu il y a ${diffDays} j`;
+    
+    return `Vu le ${new Date(lastActive).toLocaleDateString("fr-FR")}`;
+  };
   const getLastActiveText = (lastActive?: Date): string => {
     if (!lastActive) return "";
 
@@ -2125,7 +2151,7 @@ export default function ChatScreen(): React.JSX.Element {
                   <View style={styles.recordingIndicator}><View style={styles.recordingDotAnimated} /><Text style={styles.recordingText}>Enregistre un vocal... {otherRecordingDuration > 0 ? `${otherRecordingDuration}s` : ""}</Text></View>
                 ) : isOtherUserTyping ? (
                   <View style={styles.typingIndicator}><View style={styles.typingDotsContainer}><Animated.View style={[styles.typingDot, { opacity: typingDotsAnimation.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.3, 1, 0.3] }) }]} /><Animated.View style={[styles.typingDot, styles.typingDot2, { opacity: typingDotsAnimation.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.3, 1] }) }]} /><Animated.View style={[styles.typingDot, styles.typingDot3, { opacity: typingDotsAnimation.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.3, 1, 0.3] }) }]} /></View><Text style={styles.typingText}>écrit...</Text></View>
-                ) : otherUserInChat ? <Text style={styles.inChatText}>💬 Dans le chat</Text> : otherUserOnline ? <Text style={styles.onlineText}>🟢 En ligne</Text> : <Text style={styles.offlineText}>{getLastActiveText(otherUser.lastActive)}</Text>}
+                ) : otherUserInChat ? <Text style={styles.inChatText}>💬 Dans le chat</Text> : isOnlineConnected ? <Text style={styles.onlineText}>🟢 En ligne</Text> : <Text style={styles.offlineText}>{formatLastActive(otherUser.lastActive)}</Text>}
               </View>
             </TouchableOpacity>
           )}
