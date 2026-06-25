@@ -1225,11 +1225,6 @@ interface Chat {
   isActive: boolean;
 }
 
-
-
-
-
-
 interface VoiceMessageData {
   chatId: string;
   messageId: string;

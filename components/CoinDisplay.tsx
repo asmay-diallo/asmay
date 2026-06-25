@@ -37,7 +37,7 @@ const CoinDisplay: React.FC<CoinDisplayProps> = ({
           onPress={() => setShowCurrency(!showCurrency)}
           activeOpacity={0.7}
         >
-          {showCurrency ? (
+          {/* {showCurrency ? (
             <>
               <Text style={styles.value}>
                 {formatCurrency(monetaryValue, currency)}
@@ -46,13 +46,13 @@ const CoinDisplay: React.FC<CoinDisplayProps> = ({
               <Text style={styles.hint}>💵 Tapez pour voir en pièces</Text>
             </>
           ) : (
-            <>
+            <> */}
               <Text style={styles.value}>{coins.toLocaleString("fr-FR")}</Text>
               <Text style={styles.label}>Pièces</Text>
-              <Text style={styles.hint}>🪙 Tapez pour convertir</Text>
-            </>
-          )}
+              <Text style={styles.hint}>🪙 Vous pouvez gagner plus de pièces pour débloquer les fonctionnalités de réalité augmenté</Text>
+            {/* </> */}
         </TouchableOpacity>
+          
       ) : (
         // Affichage double simultané
         <View style={styles.dualDisplay}>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontWeight:"bold"
   },
   hint: {
-    fontSize: 16,
+    fontSize: 13,
     color: "#e7e1e1ff",
     fontStyle: "italic",
   },

@@ -133,7 +133,7 @@ const NotificationsScreen: React.FC = () => {
     playerErrorSound.play(); // Joue le son
   };
 
-  //   // 🔍 Surveillance de la connexion réseau
+  //    Surveillance de la connexion réseau
   useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       console.log("L'atat de connexion :",state);
@@ -686,7 +686,7 @@ const NotificationsScreen: React.FC = () => {
     </View>
   );
   
- if (!networkConnected && !networkEnabled) {
+ if (!networkConnected || !networkEnabled) {
      return (
         <View style={styles.centerContainer}>
             <Ionicons

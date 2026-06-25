@@ -693,6 +693,7 @@ const adUnitIdBan: any = __DEV__ ? TestIds.BANNER : Constants.expoConfig?.extra?
 const adUnitIdInter: any = __DEV__ ? TestIds.INTERSTITIAL : Constants.expoConfig?.extra?.ANDROID_INTERSTITIAL_UNIT_ID;
 const interstitial = InterstitialAd.createForAdRequest(adUnitIdInter);
 
+const RadarScreen: React.FC = () => {
    const [permission, requestPermission] = useCameraPermissions();
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -791,7 +792,7 @@ const interstitial = InterstitialAd.createForAdRequest(adUnitIdInter);
   const playSignalSound = () => { player.seekTo(0); player.play(); };
   const playErrorSound = () => { playerErrorSound.seekTo(0); playerErrorSound.play(); };
   
- const handleSendSignal = async (userId: string) => {
+  const handleSendSignal = async (userId: string) => {
     try {
       const targetUser = nearbyUsers.find((user) => user._id === userId);
       if (!targetUser) return;
@@ -858,7 +859,7 @@ const interstitial = InterstitialAd.createForAdRequest(adUnitIdInter);
 
   const refreshUsers = () => { refetch(); };
   
-  if (!networkConnected && !networkEnabled) {
+  if (!networkConnected || !networkEnabled) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="cloud-offline" size={70} color="#fff" />

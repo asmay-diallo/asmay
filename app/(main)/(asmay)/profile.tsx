@@ -18,6 +18,7 @@ import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads"
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import Constants from 'expo-constants';
+import NetInfo from "@react-native-community/netinfo";
 import CoinDisplay from '@/components/CoinDisplay';
 import {  debugStorage } from '../../../services/auth';
 import Button from "../../../components/Button";
@@ -77,7 +78,8 @@ export default function ProfileScreen() {
   const [refreshingCoins, setRefreshingCoins] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(0.0001); 
   const [loadingRate, setLoadingRate] = useState(false);
-  const [networkConnected, setNetworkConnected] = useState<boolean>(false)
+    const [networkConnected, setNetworkConnected] = useState<boolean>(false);
+    const [networkEnabled, setNetworkEnabled] = useState(true)
   //  //  TanStack Query
   // const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfileQuery();
   // const { data: exchangeRate = 0.0001, isLoading: rateLoading } = useExchangeRateQuery();
@@ -126,6 +128,18 @@ useEffect(() => {
       refreshCoins();
     }, [])
   );
+  
+    //    Surveillance de la connexion réseau
+    useEffect(() => {
+      const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+        console.log("L'atat de connexion :",state);
+            setNetworkConnected(!!state.isConnected);
+        setNetworkEnabled(!!state.isInternetReachable);
+     
+      });
+  
+      return () => unsubscribeNetInfo();
+    }, []);
 
   const loadExchangeRate = async () => {
     setLoadingRate(true);
@@ -317,6 +331,20 @@ useEffect(() => {
     );
   }
 
+ if (!networkConnected || !networkEnabled) {
+     return (
+        <View style={styles.centerContainer}>
+            <Ionicons
+           name="cloud-offline"
+           size={70}
+           color={"rgb(249, 244, 244)"}
+          />
+          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
+          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
+          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
+        </View>
+      );
+ }
   //  Utiliser directement authUser (plus besoin de userData)
   const user = authUser;
 

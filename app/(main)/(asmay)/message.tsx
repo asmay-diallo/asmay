@@ -232,7 +232,7 @@ export default function MessagesScreen() {
     );
   };
 
-  if (!networkConnected  && !networkEnabled) {
+  if (!networkConnected || !networkEnabled) {
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="cloud-offline" size={70} color="#fff" />
