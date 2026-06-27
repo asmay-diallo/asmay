@@ -20,7 +20,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQueryClient } from '@tanstack/react-query';
-import { chatAPI } from "@/services/api";
+import LoadingHeart from "../../../components/LoadingHeart"
 
 // Hooks Redux
 import { useChats } from "../../../hooks/useChats";
@@ -158,6 +158,7 @@ export default function MessagesScreen() {
     router.push(`/(main)/(asmay)/chat/${chatId}`);
   };
 
+
   const renderChatItem = ({ item }: { item: any }) => {
     const otherUser = getOtherUser(item);
     if (!otherUser || typeof otherUser !== 'object') return null;
@@ -233,22 +234,20 @@ export default function MessagesScreen() {
   };
 
   if (!networkConnected || !networkEnabled) {
-    return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="cloud-offline" size={70} color="#fff" />
-        <Text style={styles.loadingTitle}>Aucune connexion internet</Text>
-        <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-         <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-      </View>
+    return (<LoadingHeart 
+    message = "Connexion Internet 💛"
+    subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+    />
+    
     );
   }
 
   if (isLoading && chats.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Chargement des messages...</Text>
-      </View>
+    return (<LoadingHeart 
+      message = "Chargemnent..."
+    subMessage = "Préparez-vous à faire de belles conversation chez Asmay💛"
+    />
+    
     );
   }
 

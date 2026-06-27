@@ -5,10 +5,10 @@ import { useAudioPlayer } from "expo-audio";
 import io, { Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import {useDispatch,useSelector} from 'react-redux'
 import { incrementLikes,setLastLike} from '../store/slices/likesSlice'
-
-import { popUserInfos,popSignalsInfos } from '@/config/actions';
+import { popUserInfos,popSignalsInfos,popMessagesInfos } from '@/config/actions';
 
 interface SignalResponse {
   success: boolean;
@@ -63,12 +63,9 @@ const receivedNotificationsRef = useRef<Set<string>>(new Set());
 
 
     const socketUrl =Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
+    // const socketUrl =process.env.EXPO_PUBLIC_API_URL
 
-    // const socketUrl ='http://192.168.85.123:5000'
-
-    // process.env.EXPO_PUBLIC_API_URL ||
   
-    console.log('Connexion à:', socketUrl);
 
     // Configuration améliorée 
     const newSocket: Socket = io(socketUrl, {
@@ -201,6 +198,24 @@ const receivedNotificationsRef = useRef<Set<string>>(new Set());
   ]
  )
 })
+// Ecouter l'envie du message texte 
+   newSocket.on('new_message',(messageData) => {
+        popMessagesInfos({
+               username: messageData.sender.username,
+               avatarUrl: messageData.sender.profilePicture,
+               message: messageData.content,
+               type: true,
+             } );
+   })
+// Ecouter l'envie du message texte 
+   newSocket.on('new_voice_message',(messageData) => {
+       popMessagesInfos({
+               username: messageData.sender.username,
+               avatarUrl: messageData.sender.profilePicture,
+               message: messageData.content,
+               type: false,
+             });
+   })
   // Écouter like de la présence d'un user en line 
     newSocket.on('user_online_liked',(data)=>{
         playCorrectSound()

@@ -39,7 +39,7 @@ setUnreadMessage(unread)
           marginTop: -4,
         },
         headerStyle: {
-          backgroundColor: "#007AFF", // Bleu iOS
+          backgroundColor: "#007AFF",
         },
         headerShown:false,
         headerTintColor: "#fff",

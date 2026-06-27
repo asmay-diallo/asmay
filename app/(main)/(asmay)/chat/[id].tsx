@@ -1153,13 +1153,14 @@ import { Audio} from "expo-av";
 import { useAudioPlayer } from "expo-audio";
 import Constants from 'expo-constants';
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
-import { popMessagesInfos } from "@/config/actions";
+import NetInfo from "@react-native-community/netinfo";
 
 // Hooks Redux
 import { useMessages } from "../../../../hooks/useMessages";
 import { useChats } from "../../../../hooks/useChats";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useSocket } from "../../../../hooks/useSocket";
+import LoadingHeart from "../../../../components/LoadingHeart"
 import { chatAPI } from "@/services/api";
 import {
   receiveNewVoiceMessage,
@@ -1287,6 +1288,8 @@ export default function ChatScreen(): React.JSX.Element {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userLocationPlace, setUserLocationPlace] = useState<string | undefined>(undefined);
   const [userDistance, setUserDistance] = useState<number | undefined>(undefined);
+  const [networkConnected, setNetworkConnected] = useState<boolean>(false);
+    const [networkEnabled, setNetworkEnabled] = useState(true)
 
   // Présence et Typing
   const [otherUserInChat, setOtherUserInChat] = useState<boolean>(false);
@@ -1387,6 +1390,8 @@ export default function ChatScreen(): React.JSX.Element {
           if (currentChat) {
             const other = getOtherUser(currentChat) as User | null;
             setOtherUser(other);
+            
+        console.log("Participant est 1:", other);
             setOtherUserLastActive(other?.lastActive ?? null);
           }
         }
@@ -1559,7 +1564,7 @@ export default function ChatScreen(): React.JSX.Element {
   useEffect(() => {
     if (!socket) return;
 
-    console.log("🎧 Configuration des écouteurs socket");
+    console.log(" Configuration des écouteurs socket");
 
     const handleNewMessage = (messageData:any): void => {
       console.log("📨 Message reçu en temps réel:", messageData);
@@ -1568,12 +1573,7 @@ export default function ChatScreen(): React.JSX.Element {
         (messageData.chat === chatId || messageData.chatId === chatId) &&
         messageData.sender._id !== user?._id
       ) {
-        popMessagesInfos({
-          username: messageData.sender.username,
-          avatarUrl: messageData.sender.profilePicture,
-          message: messageData.content,
-          type: true,
-        } );
+     
         dispatch(receiveNewMessage(messageData));
         updateInChatLastMessage({
           chatId: (messageData.chatId || messageData.chat) as string,
@@ -1594,12 +1594,7 @@ export default function ChatScreen(): React.JSX.Element {
         (messageData.chat === chatId || messageData.chatId === chatId) &&
         messageData.sender._id !== user?._id
       ) {
-        popMessagesInfos({
-          username: messageData.sender.username,
-          avatarUrl: messageData.sender.profilePicture,
-          message: messageData.content,
-          type: false,
-        });
+      
         dispatch(receiveNewVoiceMessage(messageData));
         updateInChatLastMessage({
           chatId: (messageData.chatId || messageData.chat) as string,
@@ -1628,6 +1623,24 @@ export default function ChatScreen(): React.JSX.Element {
       setOtherUserOnline(true);
     }
   }, [otherUser?._id]);
+ useEffect(() => {
+    if (otherUser && onlineUsers) {
+      setIsOnlineConnected(onlineUsers.includes(otherUser._id));
+      console.log("Participant est : ", otherUser)
+    }
+  }, [onlineUsers, otherUser]);
+
+//    Surveillance de la connexion réseau
+  useEffect(() => {
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      console.log("L'atat de connexion :",state);
+          setNetworkConnected(!!state.isConnected);
+      setNetworkEnabled(!!state.isInternetReachable);
+   
+    });
+
+    return () => unsubscribeNetInfo();
+  }, []);
 
   // ==================== GESTION PROFIL ====================
   const handleOpenProfile = (userId: string): void => {
@@ -1811,7 +1824,7 @@ export default function ChatScreen(): React.JSX.Element {
   const stopRecording = async (): Promise<void> => {
     if (!recording) return;
     try {
-      if (audioProgressIntervalRef.current) { clearInterval(audioProgressIntervalRef.current); audioProgressIntervalRef.current = null; }
+      if (audioProgressIntervalRef.current) { clearInterval(audioProgressIntervalRef.current); audioProgressIntervalRef.current = 0; }
       if (recordingDurationIntervalRef.current) clearInterval(recordingDurationIntervalRef.current);
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
@@ -1827,7 +1840,7 @@ export default function ChatScreen(): React.JSX.Element {
       await sendVoiceMessage(uri, durationInSeconds);
       setRecordingDuration(0); recordingDurationRef.current = 0;
     } catch { Alert.alert("Erreur", "Impossible d'envoyer le message vocal"); }
-    finally { setRecording(null); setIsRecording(false); setIsRecordingModalVisible(false); if (audioProgressIntervalRef.current) { clearInterval(audioProgressIntervalRef.current); audioProgressIntervalRef.current = null; } }
+    finally { setRecording(null); setIsRecording(false); setIsRecordingModalVisible(false); if (audioProgressIntervalRef.current) { clearInterval(audioProgressIntervalRef.current); audioProgressIntervalRef.current = 0; } }
   };
 
   const openRecordingModal = (): void => { setIsRecordingModalVisible(true); startRecording(); };
@@ -1922,7 +1935,7 @@ export default function ChatScreen(): React.JSX.Element {
     const diffMs = now.getTime() - new Date(lastActive).getTime();
     const diffMins = Math.floor(diffMs / 60000);
     
-    if (diffMins < 1) return 'En ligne';
+    if (diffMins < 0.2) return '● En ligne';
     if (diffMins < 60) return `Vu il y a ${diffMins} min`;
     
     const diffHours = Math.floor(diffMins / 60);
@@ -1987,6 +2000,15 @@ export default function ChatScreen(): React.JSX.Element {
       ]
     );
   };
+
+ if (!networkConnected || !networkEnabled) {
+     return (
+      <LoadingHeart 
+             message = "Connexion Internet 💛"
+             subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+             />
+      );
+ }
 
   // ==================== RENDU MESSAGE ====================
   const renderMessage = ({
@@ -2105,10 +2127,10 @@ export default function ChatScreen(): React.JSX.Element {
   // ==================== LOADING ====================
   if (messagesLoading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Chargement des messages...</Text>
-      </View>
+      <LoadingHeart 
+             message = ""
+             subMessage = "Chargement des messages...💛"
+             />
     );
   }
 
@@ -2329,6 +2351,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#203447ff",
+  },
+    loadingTitle: {
+    marginTop: 16,
+    marginBottom:16,
+    fontSize: 20,
+    fontWeight:"bold",
+    color: "#f1efefff",
   },
   loadingText: {
     color: "#fff",

@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { Message,User,Chat,NearbyUser } from '@/types';
 
 const API_BASE_URL =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
-// const API_BASE_URL =`http://192.168.85.123:5000/api`
+// const API_BASE_URL =`${process.env.EXPO_PUBLIC_API_URL}/api`
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,

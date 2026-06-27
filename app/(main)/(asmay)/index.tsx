@@ -687,6 +687,8 @@ import { signalAPI } from "@/services/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
 import ARRadarView from "../../../components/ARRadarView";
+import LoadingHeart from "../../../components/LoadingHeart"
+
 import Constants from 'expo-constants';
 
 const adUnitIdBan: any = __DEV__ ? TestIds.BANNER : Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
@@ -861,12 +863,10 @@ const RadarScreen: React.FC = () => {
   
   if (!networkConnected || !networkEnabled) {
     return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="cloud-offline" size={70} color="#fff" />
-        <Text style={styles.loadingTitle}>Aucune connexion internet</Text>
-                <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-                 <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-      </View>
+     <LoadingHeart 
+         message = "Connexion Internet 💛"
+         subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+         />
     );
   }
   
@@ -933,3 +933,5 @@ const styles = StyleSheet.create({
 
   }
 });
+
+export default RadarScreen

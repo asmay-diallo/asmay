@@ -13,7 +13,7 @@
     "build-dev": "eas build --platform android --profile development",
     "build-prod": "eas build --platform android --profile production",
     "dev": "npx expo start --dev-client",
-    "update": "eas updates --branch production",
+    "update": "eas update --branch production",
     "auto": "eas update --auto"
   },
   "dependencies": {

@@ -15,9 +15,11 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Constants from 'expo-constants';
 import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
+import NetInfo from "@react-native-community/netinfo";
 import { useAuth } from "../hooks/useAuth";
 import { userAPI } from "../services/api";
 import { useSocket } from "../hooks/useSocket";
+import LoadingHeart from "./LoadingHeart"
 
 interface PublicUser {
   _id: string;
@@ -60,6 +62,8 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
   const [isConnected, setIsConnected] = useState(false);
   const [commonInterests, setCommonInterests] = useState<string[]>([]);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
+    const [networkConnected, setNetworkConnected] = useState(true);
+      const [networkEnabled, setNetworkEnabled] = useState(true)
   
     const bannerRef = useRef<BannerAd>(null);
 
@@ -130,6 +134,16 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
       setIsConnected(onlineUsers.includes(profile._id));
     }
   }, [onlineUsers, profile]);
+  
+    // Vérifier connexion réseau
+    useEffect(() => {
+      const unsubscribe = NetInfo.addEventListener((state) => {
+        setNetworkConnected(!!state.isConnected);
+        setNetworkEnabled(!!state.isInternetReachable);
+      });
+      return () => unsubscribe();
+    }, []);
+  
 
   // ==================== FORMATAGE ====================
   const formatLastActive = (lastActive?: Date): string => {
@@ -171,12 +185,20 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
   };
 
   // ==================== RENDU ====================
+    if (!networkConnected || !networkEnabled) {
+      return (<LoadingHeart 
+      message = "Connexion Internet 💛"
+      subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+      />
+      
+      );
+    }
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Chargement du profil...</Text>
-      </View>
+     <LoadingHeart 
+      message = ""
+      subMessage = "Chargement de son profil...💛"
+      />
     );
   }
 

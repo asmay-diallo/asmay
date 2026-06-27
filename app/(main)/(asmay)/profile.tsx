@@ -23,6 +23,7 @@ import CoinDisplay from '@/components/CoinDisplay';
 import {  debugStorage } from '../../../services/auth';
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
+import LoadingHeart from "../../../components/LoadingHeart"
 import { useRouter } from "expo-router";
 import { uploadAPI } from "../../../services/upload";
 import {useAuth } from '../../../hooks/useAuth'
@@ -324,25 +325,19 @@ useEffect(() => {
   // Afficher le chargement si authLoading est true
   if (authLoading || !authUser) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTextVoid}>Chargement de votre profil...</Text>
-        <ActivityIndicator size="large"/>
-      </View>
+     <LoadingHeart 
+           message = ""
+           subMessage = "Chargement de votre profil...💛"
+           />
     );
   }
 
  if (!networkConnected || !networkEnabled) {
      return (
-        <View style={styles.centerContainer}>
-            <Ionicons
-           name="cloud-offline"
-           size={70}
-           color={"rgb(249, 244, 244)"}
-          />
-          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
-          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-        </View>
+    <LoadingHeart 
+           message = "Connexion Internet 💛"
+           subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+           />
       );
  }
   //  Utiliser directement authUser (plus besoin de userData)

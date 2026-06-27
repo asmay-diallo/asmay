@@ -1635,7 +1635,7 @@
 
 // ARRadarView.tsx - Version mise à jour avec appels audio/vidéo
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef,useCallback } from "react";
 import {
   View,
   Text,
@@ -1883,7 +1883,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   } = useWebRTC(currentUser || null);
   
   // États
-    const [isOnlineConnected, setIsOnlineConnected] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredUsers, setFilteredUsers] = useState<ARUser[]>(users);
@@ -1955,6 +1954,11 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       setFilteredUsers(filtered);
     }
   }, [users, searchQuery]);
+// ==================== MISE À JOUR DU STATUT EN LIGNE ====================
+ const isUserOnline = useCallback((userId: string) => {
+  if (!onlineUsers) return false;
+  return onlineUsers.includes(userId);
+}, [onlineUsers]);
 
   // Gestionnaire de recherche
   const handleSearch = (text: string) => {
@@ -2029,16 +2033,6 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     const user = users.find(u => u._id === userId);
     if (!user) return;
 
-    // Vérifier si l'utilisateur est en ligne
-    // if (!isUserOnline(userId)) {
-    //   Alert.alert(
-    //     'Utilisateur hors ligne',
-    //     `${user.username} n'est pas en ligne actuellement.`,
-    //     [{ text: 'OK' }]
-    //   );
-    //   return;
-    // }
-
     // Initier l'appel et naviguer
     initiateCall(userId, 'video');
     router.push({
@@ -2091,10 +2085,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       console.error("Error to like this user:", error);
     }
   };
-  // Vérifier si un utilisateur est en ligne
-  const isUserOnline = (userId: string): boolean => {
-    return onlineUsers?.includes(userId) || false;
-  };
+
   // Obtient la couleur en fonction de la distance
   const getDistanceColor = (distance: number): string => {
     if (distance <= 25) return '#FF3B30';
@@ -2120,14 +2111,14 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     const diffMins = Math.floor(diffMs / 60000);
     
     if (diffMins === 0 ) return '● En ligne';
-    if (diffMins > 0 && diffMins < 1 ) return `Il y a ${diffMins}s`;
-    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffMins > 0 && diffMins < 1 ) return `Vu il y a ${diffMins}s`;
+    if (diffMins < 60) return `Vu il y a ${diffMins} min`;
     
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffHours < 24) return `Vu il y a ${diffHours} h`;
     
     const diffDays = Math.floor(diffHours / 24);
-    return `Il y a ${diffDays} j`;
+    return `Vu il y a ${diffDays} j`;
   };
   // Rendu de la barre de recherche
   const renderSearchBar = () => (
@@ -2174,8 +2165,9 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   // Rendu d'un élément utilisateur
   const renderUserItem = ({ item: user }: { item: ARUser }) => {
     const isSending = isSendingSignal === user._id;
-    const online = user.lastActive
-    
+    const isOnline = isUserOnline(user._id);
+    const online = user.lastActive 
+      //  setIsUserId(user._id)
     const handleLikePress = (event: any) => {
       handleLikeOnlineUser(user._id, event);
     };
@@ -2207,7 +2199,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
     return (
       <View style={[
         styles.userCard,
-        online && styles.userCardOnline
+        isOnline && styles.userCardOnline
       ]}>
         {/* Photo de profil avec indicateur de statut */}
         <TouchableOpacity 
@@ -2289,8 +2281,7 @@ const ARRadarView: React.FC<UserListViewProps> = ({
 
           {/* Statut en ligne ou dernière activité */}
           <Text style={styles.statusText}> 
-            {online && getLastActiveText(online) }
-              <Text style={styles.onlineText}>● En ligne</Text> 
+            {isOnline ? "En ligne": getLastActiveText(user.lastActive) }
          </Text> 
         </TouchableOpacity>
 

@@ -10,7 +10,7 @@ export const  toastConfig = {
   userLikeInfos: ({ text1, text2, props }: ToastConfigParams<any>) => (
     <View style={styles.userToast}>
       <Image 
-        source={{ uri: props.avatarUrl || props.username?.charAt(0).toUpperCase() }} 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
         style={styles.avatar} 
       />
       <View style={styles.userInfo}>
@@ -24,7 +24,7 @@ export const  toastConfig = {
   messagesInfos:({text1,text2,props}:ToastConfigParams<any>)=>(
       <View style={styles.userToast}>
       <Image 
-        source={{ uri: props.avatarUrl || props.username.charAt(0).toUpperCase() }} 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
         style={styles.avatar} 
       />
       <View style={styles.userInfo}>
@@ -41,7 +41,7 @@ export const  toastConfig = {
   signalsInfos:({text1,text2,props}:ToastConfigParams<any>)=>(
     <View style={styles.userToast}>
       <Image 
-        source={{ uri: props.avatarUrl || props.username.charAt(0).toUpperCase() }} 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
         style={styles.avatar} 
       />
       <View style={styles.userInfo}>

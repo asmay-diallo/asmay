@@ -116,7 +116,6 @@
           "microphonePermission": "ASMAY a besoin du microphone pour les appels audio"
         }
       ],
-      "react-native-fbads"
     ],
     "experiments": {
       "typedRoutes": true,

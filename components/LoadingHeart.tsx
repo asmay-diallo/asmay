@@ -19,7 +19,7 @@ interface LoadingHeartProps {
 
 export default function LoadingHeart({
   message = "Chargement...",
-  subMessage = "Préparez-vous à faire de belles rencontres 💛",
+  subMessage = "Préparez-vous à faire de belles rencontres chez Asmay💛",
 }: LoadingHeartProps): React.JSX.Element {
   // Animations
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -34,7 +34,7 @@ export default function LoadingHeart({
     const heartbeat = Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, {
-          toValue: 1.3,
+          toValue: 1.1,
           duration: 200,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
@@ -199,14 +199,14 @@ export default function LoadingHeart({
           },
         ]}
       >
-        <Ionicons name="heart" size={80} color="#ff4444" />
+        <Ionicons name="heart" size={80} color="#f0c507" />
         {/* Petit cœur superposé */}
-        <Ionicons
+        {/* <Ionicons
           name="heart"
           size={50}
-          color="#ff6b6b"
+          color="#f0120a"
           style={styles.innerHeart}
-        />
+        /> */}
       </Animated.View>
 
       {/* Message principal */}
@@ -216,7 +216,7 @@ export default function LoadingHeart({
           { transform: [{ translateY: floatAnim }] },
         ]}
       >
-        <Text style={styles.title}>Asmay</Text>
+        {/* <Text style={styles.title}>Asmay</Text> */}
         <Text style={styles.message}>{message}</Text>
       </Animated.View>
 
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: "rgba(255, 68, 68, 0.08)",
+    backgroundColor: "rgba(255, 211, 68, 0.08)",
   },
   bgCircle2: {
     position: "absolute",
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     width: 400,
     height: 400,
     borderRadius: 200,
-    backgroundColor: "rgba(255, 107, 107, 0.05)",
+    backgroundColor: "rgba(222, 241, 50, 0.05)",
   },
   bgCircle3: {
     position: "absolute",
@@ -290,6 +290,7 @@ const styles = StyleSheet.create({
   },
   orbitContainer: {
     position: "absolute",
+    top:180,
     width: 140,
     height: 140,
     justifyContent: "center",
@@ -303,6 +304,7 @@ const styles = StyleSheet.create({
   },
   halo: {
     position: "absolute",
+    top:190,
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -312,6 +314,7 @@ const styles = StyleSheet.create({
   },
   heartContainer: {
     position: "relative",
+    top:-35,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -334,28 +337,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   message: {
-    fontSize: 16,
+    fontSize: 20,
     color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "500",
+    fontStyle: "italic",
     letterSpacing: 1,
   },
   dotsContainer: {
     flexDirection: "row",
     marginTop: 20,
-    gap: 8,
+    gap: 18,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 22,
+    height: 10,
+    borderTopLeftRadius: 4,
+    borderBottomRightRadius: 4,
     backgroundColor: "#ff6b6b",
   },
   subMessage: {
     marginTop: 25,
-    fontSize: 13,
-    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 15,
+    fontWeight:"200",
+    color: "rgba(255, 255, 255, 0.94)",
     textAlign: "center",
     paddingHorizontal: 40,
     fontStyle: "italic",
+    letterSpacing: 1,
   },
 });

@@ -53,7 +53,7 @@ export const useChats = (): UseChatsReturn => {
   const unreadCount = useSelector((state: RootState) => state.chats.unreadCount);
   const messagesByChat = useSelector((state: RootState) => state.messages.messagesByChat);
 
-  // 🔥 Calculer les messages non lus à partir des messages
+  //  Calculer les messages non lus à partir des messages
   const getChatUnreadCount = useCallback((chatId: string): number => {
     const messages = messagesByChat[chatId] || [];
     
@@ -115,7 +115,7 @@ export const useChats = (): UseChatsReturn => {
     
     return null;
   }, [user]);
-  // 🔥 Fonction pour mettre à jour le dernier message dans chatSlice
+  //  Fonction pour mettre à jour le dernier message dans chatSlice
  
  const updateInChatLastMessage = useCallback((data: {
     chatId: string;

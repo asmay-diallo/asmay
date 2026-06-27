@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import ScreenLoading from '../components/ScreenLoading';
+import LoadingHeart from '../components/LoadingHeart';
 import {useEffect,useState} from "react"
 
 export default function Index() {
@@ -12,7 +12,7 @@ export default function Index() {
  useEffect(() => {
     
     const minimumDelay = new Promise(resolve => 
-      setTimeout(resolve, 0)
+      setTimeout(resolve, 100)
     );
     
     const authReady = !loading ? Promise.resolve() : 
@@ -22,7 +22,7 @@ export default function Index() {
             clearInterval(checkAuth);
             resolve();
           }
-        }, 100);
+        }, 500);
       });
 
     Promise.all([minimumDelay, authReady]).then(() => {
@@ -30,9 +30,9 @@ export default function Index() {
     });
   }, [loading]);
 // 
-//   if (!ready) {
-//     return <ScreenLoading />;
-//   }
+  // if (!ready) {
+  //   return <LoadingHeart />;
+  // }
 
   if (isAuthenticated) {
     console.log(" Redirection vers (main)");

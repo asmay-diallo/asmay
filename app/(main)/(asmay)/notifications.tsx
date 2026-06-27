@@ -30,6 +30,7 @@ import {useAuth} from "../../../hooks/useAuth"
 import { useAudioPlayer } from "expo-audio";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
+import LoadingHeart from "../../../components/LoadingHeart"
 import Constants from 'expo-constants';
 import {
   addRewardToQueue,
@@ -688,25 +689,19 @@ const NotificationsScreen: React.FC = () => {
   
  if (!networkConnected || !networkEnabled) {
      return (
-        <View style={styles.centerContainer}>
-            <Ionicons
-           name="cloud-offline"
-           size={70}
-           color={"rgb(249, 244, 244)"}
-          />
-          <Text style={styles.loadingTitle}> Aucune connexion internet</Text>
-          <Text style={styles.loadingText}>Vous n'êtes pas connectés à l'internet.</Text>
-          <Text style={styles.loadingText}>Vérifiez votre connexion et réessayer</Text>
-        </View>
+   <LoadingHeart 
+       message = "Connexion Internet 💛"
+       subMessage = "Vérifier votre connexion intrenet et réessayer💛"
+       />
       );
  }
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Chargement des notifications...</Text>
-      </View>
+      <LoadingHeart 
+       message = ""
+       subMessage = "Chargement des signaux...💛"
+       />
     );
   }
 
