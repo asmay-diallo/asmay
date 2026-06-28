@@ -1855,7 +1855,7 @@ export default function ChatScreen(): React.JSX.Element {
   const sendVoiceMessage = useCallback(
     async (audioUri: string, durationSeconds: number): Promise<void> => {
       const tempId = `temp-voice-${Date.now()}`;
-      const reelUrl = `${process.env.EXPO_PUBLIC_API_URL}${audioUri}`
+      const reelUrl = `${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}${audioUri}`
       const tempVoiceData: TempVoiceMessage = {
         _id: tempId,
         chatId: chatId as string,
