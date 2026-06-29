@@ -147,7 +147,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
       // Décharger l'ancien son
       await unloadSound();
       const fullUrl = getFullUrl(audioUrl);
-      console.log(`🎵 Chargement audio: ${messageId}`);
+      console.log(`🎵 Chargement audio: ${fullUrl}`)
 
       // Configuration spécifique à la plateforme
       const config: any = {
