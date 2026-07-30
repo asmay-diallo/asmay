@@ -130,8 +130,9 @@ const  handleSendHiReply = () => {
       setSocket(null);
     }
 
-    const socketUrl ='http://192.168.81.123:5000'
+    // const socketUrl ='http://192.168.81.123:5000'
 
+const socketUrl =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
     // Configuration améliorée 
     const newSocket: Socket = io(socketUrl, {
       transports: ['websocket','polling'],

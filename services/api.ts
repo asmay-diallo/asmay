@@ -10,8 +10,8 @@ import {
   Transaction,
 } from '../types/payment';
 
-// const API_BASE_URL =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
-const API_BASE_URL ="http://192.168.81.123:5000/api"
+const API_BASE_URL =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
+// const API_BASE_URL ="http://192.168.81.123:5000/api"
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
