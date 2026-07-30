@@ -15,6 +15,7 @@ import likesReducer from "./slices/likesSlice"
 import incomingCallReducer from './slices/incomingCallSlice';
 import streamReducer from './slices/streamSlice'
 import connexionReducer from './slices/connexionSlice'
+import faceReducer from './slices/faceSlice'
 
 // Types
 export interface RootState {
@@ -28,6 +29,7 @@ export interface RootState {
   incomingCall:ReturnType<typeof incomingCallReducer>;
   stream:ReturnType<typeof streamReducer>;
   connexion:ReturnType<typeof connexionReducer>;
+  face:ReturnType<typeof faceReducer>;
 }
 
 export type AppDispatch = typeof store.dispatch;
@@ -49,7 +51,8 @@ const rootReducer = combineReducers({
   likes:likesReducer,
   incomingCall:incomingCallReducer,
   stream:streamReducer,
-  connexion:connexionReducer
+  connexion:connexionReducer,
+  face:faceReducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -676,10 +676,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Location from "expo-location";
 import NetInfo from "@react-native-community/netinfo";
 import {useDispatch,useSelector} from 'react-redux'
-import { setConnexionState } from "@/store/slices/connexionSlice";
-
+import { useRouter } from "expo-router";
 // Capteur de mouvements , d'accélérations 
-import { Gyroscope, Accelerometer} from "expo-sensors"
+import { Gyroscope, Accelerometer,Magnetometer} from "expo-sensors"
 
 // TanStack Query hooks
 import { useNearbyUsersQuery, useUpdateLocation } from "../../../hooks/queries/useNearbyUserQuery";
@@ -688,6 +687,7 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
 import ARRadarView from "../../../components/ARRadarView";
 import LoadingHeart from "../../../components/LoadingHeart"
+// import { toggleFace } from "@/config/faces";
 
 import Constants from 'expo-constants';
 
@@ -707,8 +707,13 @@ const RadarScreen: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
    
   const { user } = useAuth();
+  const router = useRouter()
   const { socket, isConnected, sendSignal } = useSocket();
-  const bannerRef = useRef<BannerAd>(null);
+  const bannerRef = useRef<number | 0>(0);
+  const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
+  // const bannerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const dispatch = useDispatch()
   const likesCount = useSelector((state:any)=>state.likes.count)
   const network = useSelector((state:any)=>state.connexion.internetState)
@@ -746,7 +751,7 @@ const RadarScreen: React.FC = () => {
         { 
           accuracy: Location.Accuracy.Highest, 
           timeInterval: 50000, 
-          distanceInterval: 5 
+          distanceInterval: 20
          }, 
         async (loc) => {
           const updatedLocation = { 
@@ -763,7 +768,30 @@ const RadarScreen: React.FC = () => {
     else if (permission && !permission.granted) requestPermission();
   }, [permission]);
 
-      
+       //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
+
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
+  };
+
   useEffect(() => {
     
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -898,12 +926,22 @@ const RadarScreen: React.FC = () => {
 
       </View>
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.controlButton} onPress={refreshUsers}>
-          <Ionicons name="refresh-outline" size={20} color="white" />
+        <TouchableOpacity style={styles.controlButton} onPress={() =>router.push("/(main)/(yamsa)")}>
+          <Ionicons name="menu" size={20} color="white" />
         </TouchableOpacity>
       </View>
       
-      <BannerAd ref={bannerRef} unitId={adUnitIdBan} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+      <BannerAd
+       ref={bannerRef}
+        key={bannerKey}
+        unitId={adUnitIdBan} 
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+         onAdLoaded={handleBannerLoaded}
+          onAdFailedToLoad={handleBannerFailed}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: false,
+          }}
+        />
     </ImageBackground>
   );
 }

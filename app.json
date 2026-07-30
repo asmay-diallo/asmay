@@ -8,6 +8,8 @@
     "scheme": "asmayi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "sdkVersion": "54.0.0",
+
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -24,6 +26,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
+      "targetSdkVersion": 36,
       "predictiveBackGestureEnabled": false,
       "package": "com.asmay25.Asmayi",
       "permissions": [

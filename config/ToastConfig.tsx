@@ -57,6 +57,65 @@ export const  toastConfig = {
 
     </View>
   ),
+  // Config de signals acceptés pour poper
+  signalsAcceptedInfos:({text1,text2,props}:ToastConfigParams<any>)=>(
+    <View style={styles.userToast}>
+      <Image 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
+        style={styles.avatar} 
+      />
+      <View style={styles.userInfo}>
+        <Text style={styles.userName}>{text1}</Text>
+        <Text style={styles.userNickname}>{text2}</Text>
+        {props.message && <Text style={styles.userMessage}>{props.message}</Text>}
+      </View>
+      <View style={styles.userInfo}>
+        <TouchableOpacity style={styles.buttonVoir} onPress={()=>router.navigate('/(main)/(asmay)/notifications')}>
+          <Text style={styles.textVoir}>Voir</Text>
+        </TouchableOpacity>
+      </View>
+
+    </View>
+  ),
+  // Config de signals refusés pour poper 
+  signalsDeclinedInfos:({text1,text2,props}:ToastConfigParams<any>)=>(
+    <View style={styles.userToast}>
+      <Image 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
+        style={styles.avatar} 
+      />
+      <View style={styles.userInfo}>
+        <Text style={styles.userName}>{text1}</Text>
+        <Text style={styles.userNickname}>{text2}</Text>
+        {props.message && <Text style={styles.userMessage}>{props.message}</Text>}
+      </View>
+      <View style={styles.userInfo}>
+        <TouchableOpacity style={styles.buttonVoir} onPress={()=>router.navigate('/(main)/(asmay)/notifications')}>
+          <Text style={styles.textVoir}>Voir</Text>
+        </TouchableOpacity>
+      </View>
+
+    </View>
+  ),
+  salutationInfos:({text1,text2,props}:ToastConfigParams<any>)=>(
+    <View style={styles.userToast}>
+      <Image 
+        source={{ uri: props.avatarUrl || props.username?.toUpperCase() }} 
+        style={styles.avatar} 
+      />
+      <View style={styles.userInfo}>
+        <Text style={styles.userName}>{text1}</Text>
+        <Text style={styles.userNickname}>{text2}</Text>
+        {props.message && <Text style={styles.userMessage}>{props.message}</Text>}
+      </View>
+      <View style={styles.userInfo}>
+        <TouchableOpacity style={styles.buttonVoir} onPress={()=>router.navigate('/(main)/(asmay)/notifications')}>
+          <Text style={styles.textVoir}>Voir</Text>
+        </TouchableOpacity>
+      </View>
+
+    </View>
+  ),
   success: (props: any) => (
     <View style={[styles.userToast, styles.successToast]}>
       <Text>{props.text1}</Text>

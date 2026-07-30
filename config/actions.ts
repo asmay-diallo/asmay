@@ -24,7 +24,7 @@ export const popUserInfos = useCallback((userData: {
  }, []);
 
   // Poper les infos de l'utilisateur qui a liké 
- export const popMessagesInfos = useCallback((messagesData: { 
+export const popMessagesInfos = useCallback((messagesData: { 
    username: string; 
    avatarUrl?: string; 
    message: string;
@@ -46,11 +46,12 @@ export const popUserInfos = useCallback((userData: {
    });
   }, []);
 
-  export const popSignalsInfos = useCallback((signalsData:{
+   // Poper les Infos de signals réçu
+export const popSignalsInfos = useCallback((signalsData:{
   username: string; 
   avatarUrl?: string; 
   message: string;
-  })=>{
+   })=>{
     Toast.show({
      type: 'signalsInfos',
      text1: "✨ Nouveau signal ",
@@ -64,4 +65,66 @@ export const popUserInfos = useCallback((userData: {
      autoHide: true,
      swipeable: true,
    });
-  },[])
+   },[])
+
+   // Poper les Infos de signals Acceptés 
+export const popSignalsAcceptedInfos = useCallback((signalsData:{
+  username: string; 
+  avatarUrl?: string; 
+  message: string;
+   })=>{
+    Toast.show({
+     type: 'signalsAcceptedInfos',
+     text1: "✨ J'ai accepté votre signal",
+     text2: signalsData.username.toUpperCase(),
+     props: {
+       avatarUrl: signalsData.avatarUrl,
+       message: signalsData.message ,
+     },
+     position: "top",
+     visibilityTime: 5000,
+     autoHide: true,
+     swipeable: true,
+   });
+   },[])
+
+   // Poper les Infos de signals Refusés
+export const popSignalsDeclinedInfos = useCallback((signalsData:{
+  username: string; 
+  avatarUrl?: string; 
+  message: string;
+   })=>{
+    Toast.show({
+     type: 'signalsDeclinedInfos',
+     text1: "✨ Signal Refusé ",
+     text2: signalsData.username.toUpperCase(),
+     props: {
+       avatarUrl: signalsData.avatarUrl,
+       message: signalsData.message ,
+     },
+     position: "top",
+     visibilityTime: 5000,
+     autoHide: true,
+     swipeable: true,
+   });
+   },[])
+   // Poper les Infos de signals Refusés
+export const popSalutationInfos = useCallback((signalsData:{
+  username: string; 
+  avatarUrl?: string; 
+  message: string;
+   })=>{
+    Toast.show({
+     type: 'salutationInfos',
+     text1: "👋 Salutation ! ",
+     text2: signalsData.username.toUpperCase(),
+     props: {
+       avatarUrl: signalsData.avatarUrl,
+       message: signalsData.message ,
+     },
+     position: "top",
+     visibilityTime: 5000,
+     autoHide: true,
+     swipeable: true,
+   });
+   },[])

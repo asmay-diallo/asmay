@@ -1656,6 +1656,7 @@ import { useRouter } from "expo-router";
 import PublicProfileScreen from "./PublicProfileScreen";
 import { userAPI } from "@/services/api";
 import { useWebRTC } from "../hooks/webrtc/useCall"; 
+import HiReplyModal from "./HiReplyModal";
 
 const { width, height } = Dimensions.get("window");
 
@@ -1867,8 +1868,11 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   showSearchBar = true,
   currentUser, 
 }) => {
-  const { onlineUsers, socket, isConnected } = useSocket();
+  const { onlineUsers, socket, isConnected, hiReplyModal,
+    setHiReplyModal,
+    handleSendHiReply, } = useSocket();
   const router = useRouter();
+  // const currentRoute = useRoute();
   
   // Hook WebRTC pour les appels
   const {
@@ -1892,7 +1896,8 @@ const ARRadarView: React.FC<UserListViewProps> = ({
   const [userDistance, setUserDistance] = useState<number | undefined>(undefined);
   const [isUserProfileVisible, setIsUserProfileVisible] = useState(false);
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
-  
+  const [hiAnimations, setHiAnimations] = useState<{ id: number; x: number; y: number; username: string }[]>([]);
+ 
   // État pour le menu d'actions rapides
   const [actionMenu, setActionMenu] = useState<UserActionMenu | null>(null);
 
@@ -2085,6 +2090,22 @@ const ARRadarView: React.FC<UserListViewProps> = ({
       console.error("Error to like this user:", error);
     }
   };
+  const handleSalutUser = (userId: string, username: string, event?: any) => {
+  // // Animation de bulle de salut
+  // if (event) {
+  //   const { pageX, pageY } = event.nativeEvent;
+  //   const animId = Date.now();
+  //   setHiAnimations(prev => [...prev, { id: animId, x: pageX, y: pageY, username }]);
+  //   setTimeout(() => {
+  //     setHiAnimations(prev => prev.filter(h => h.id !== animId));
+  //   }, 2000);
+  // }
+
+  // Envoyer via socket
+  if (socket && isConnected) {
+    socket.emit("salut", userId);
+  }
+};
 
   // Obtient la couleur en fonction de la distance
   const getDistanceColor = (distance: number): string => {
@@ -2288,40 +2309,46 @@ const ARRadarView: React.FC<UserListViewProps> = ({
         {/* Zone d'actions */}
         <View style={styles.actionsContainer}>
            {/* Bouton Appel Audio - visible seulement si en ligne */}
-          {/* {online && (
+          {online && (
             <TouchableOpacity 
               style={styles.callButton}
               onPress={() => handleAudioCall(user._id)}
             >
               <Ionicons name="call" size={22} color="#34C759" />
             </TouchableOpacity>
-          )} */}
+          )} 
 
           {/* Bouton Appel Vidéo - visible seulement si en ligne */}
-          {/* {online && (
+         {online && (
             <TouchableOpacity 
               style={styles.callButton}
               onPress={() => handleVideoCall(user._id)}
             >
               <Ionicons name="videocam" size={22} color="#5856D6" />
             </TouchableOpacity>
-          )}  */}
+          )}
 
         
           {/* Bouton Plus d'options */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.moreButton}
             onPress={handleMorePress}
-          >
-            <Ionicons name="ellipsis-vertical" size={25} color="rgb(251, 247, 247)" />
-          </TouchableOpacity>
+           >
+            <Ionicons name="ellipsis-vertical" size={28} color="rgb(251, 247, 247)" />
+          </TouchableOpacity> */}
             {/* Bouton Like */}
           <TouchableOpacity 
             style={styles.likeButton}
             onPress={handleLikePress}
-          >
-            <Ionicons name="heart" size={28} color="#fed50a" />
+           >
+            <Ionicons name="heart" size={30} color="#fed50a" />
           </TouchableOpacity>
+          <TouchableOpacity 
+                    style={styles.hiButton}
+                     onPress={(event) => handleSalutUser(user._id, user.username, event)}
+                    >
+               <Text style={styles.hiButtonText}>👋</Text>
+           </TouchableOpacity>
 
         </View>
       </View>
@@ -2383,8 +2410,8 @@ const ARRadarView: React.FC<UserListViewProps> = ({
         onProfile={handleOpenProfile}
       />
 
-      {/* Indicateur d'appel actif */}
-      {isCallActive && (
+      {/* Indicateur d'appel actif currentRoute.name !== 'call' &&*/}
+      {isCallActive &&  (
         <View style={styles.activeCallBanner}>
           <View style={styles.activeCallContent}>
             <View style={styles.activeCallIndicator}>
@@ -2423,7 +2450,14 @@ const ARRadarView: React.FC<UserListViewProps> = ({
         windowSize={5}
         removeClippedSubviews={true}
       />
-     
+     {/* Message de salutation et son Modal */}
+     < HiReplyModal
+       visible={hiReplyModal.visible}
+        fromUser={hiReplyModal.fromUser}
+        message={hiReplyModal.message}
+        // onClose={closeHiReplyModal}
+        onSend={handleSendHiReply}
+      />  
       {/* Modal de profil public */}
       <Modal
         visible={isUserProfileVisible}
@@ -2487,6 +2521,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 13,
     fontStyle: 'italic',
+  },
+  hiButton:{
+  fontSize:25
+
+  },
+  hiButtonText:{
+  fontSize:25
   },
   // Styles d'en-tête
   headerContainer: {

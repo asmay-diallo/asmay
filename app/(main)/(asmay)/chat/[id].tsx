@@ -1313,11 +1313,12 @@ export default function ChatScreen(): React.JSX.Element {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  
 
   // Refs
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const bannerRef = useRef<BannerAd>(null);
+  const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   // Audio
   const player = useAudioPlayer(
@@ -1329,6 +1330,29 @@ export default function ChatScreen(): React.JSX.Element {
   const playReceivedMessageSound = (): void => {
     player.seekTo(0);
     player.play();
+  };
+    //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
+
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
   };
 // ==================== MISE À JOUR DU STATUT EN LIGNE ====================
   useEffect(() => {
@@ -1575,14 +1599,14 @@ export default function ChatScreen(): React.JSX.Element {
       ) {
      
         dispatch(receiveNewMessage(messageData));
-        updateInChatLastMessage({
-          chatId: (messageData.chatId || messageData.chat) as string,
-          content: messageData.content,
-          senderId: messageData.sender._id,
-          currentUserId: user?._id || "",
-          lastActivity: messageData.createdAt,
-          type: messageData.type,
-        });
+        // updateInChatLastMessage({
+        //   chatId: (messageData.chatId || messageData.chat) as string,
+        //   content: messageData.content,
+        //   senderId: messageData.sender._id,
+        //   currentUserId: user?._id || "",
+        //   lastActivity: messageData.createdAt,
+        //   type: messageData.type,
+        // });
         scrollToBottom();
       }
     };
@@ -1810,7 +1834,7 @@ export default function ChatScreen(): React.JSX.Element {
       setRecording(newRecording); setIsRecording(true); setRecordingDuration(0); recordingDurationRef.current = 0;
       recordingDurationIntervalRef.current = setInterval(() => { recordingDurationRef.current += 100; setRecordingDuration((prev) => prev + 100); }, 100);
 
-      // 🆕 Émettre début enregistrement
+      //  Émettre début enregistrement
       if (socket) {
         socket.emit("audio_recording_start", { chatId, username: user?.username, timestamp: new Date().toISOString() });
         audioProgressIntervalRef.current = setInterval(() => {
@@ -1855,7 +1879,7 @@ export default function ChatScreen(): React.JSX.Element {
   const sendVoiceMessage = useCallback(
     async (audioUri: string, durationSeconds: number): Promise<void> => {
       const tempId = `temp-voice-${Date.now()}`;
-      const reelUrl = `${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}${audioUri}`
+      const reelUrl =__DEV__?`${process.env.EXPO_PUBLIC_API_URL}`: `${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}${audioUri}`
       const tempVoiceData: TempVoiceMessage = {
         _id: tempId,
         chatId: chatId as string,
@@ -2146,11 +2170,17 @@ export default function ChatScreen(): React.JSX.Element {
         resizeMode="cover"
         style={styles.background}
       >
-        <BannerAd
-          ref={bannerRef}
-          unitId={adUnitId}
-          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-        />
+       <BannerAd 
+             ref={bannerRef}
+             key={bannerKey}
+            unitId={adUnitIdBan} 
+             size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            onAdLoaded={handleBannerLoaded}
+            onAdFailedToLoad={handleBannerFailed}
+            requestOptions={{
+                     requestNonPersonalizedAdsOnly: false,
+                                 }}
+               />
 
         {/* HEADER */}
        <View style={styles.header}>

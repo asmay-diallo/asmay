@@ -28,8 +28,8 @@ export const useNearbyUsersQuery = (latitude: number, longitude: number, enabled
     },
     enabled: enabled && !!latitude && !!longitude,
     staleTime: 2 * 1000, // 30 secondes
-    gcTime: 5 * 1000, // 2 minutes
-    refetchInterval: 2*60 * 1000, // Recharge toutes les 2 minutes
+    gcTime: 31 * 1000, // 2 minutes
+    refetchInterval: 3*60 * 1000, // Recharge toutes les 2 minutes
   });
 };
 

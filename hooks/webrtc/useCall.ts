@@ -983,7 +983,7 @@ import {
   RTCIceCandidate,
   MediaStream,
 } from 'react-native-webrtc';
-import { Alert } from 'react-native';
+import { Alert,Vibration,Platform } from 'react-native';
 import { CallType, CallState, IncomingCallData, CurrentUser } from '../../types';
 import { useSocket } from '../useSocket';
 import { useDispatch, useSelector } from 'react-redux';
@@ -1001,8 +1001,7 @@ import {
   resetStreams,
 } from '../../store/slices/streamSlice';
 import StreamHolder from '../../services/StreamHolder';
-import { AnyAction } from '@reduxjs/toolkit';
-
+import PeerConnectionHolder from '../../services/PeerConnectionHolder'
 const configuration: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
@@ -1010,16 +1009,35 @@ const configuration: RTCConfiguration = {
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" }, 
     {
-      urls: "turn:openrelay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "76a52968f5c4cf5ae4f96c86",
+        credential: "Yd+X04xskZlGJxFL",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "76a52968f5c4cf5ae4f96c86",
+        credential: "Yd+X04xskZlGJxFL",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "76a52968f5c4cf5ae4f96c86",
+        credential: "Yd+X04xskZlGJxFL",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "76a52968f5c4cf5ae4f96c86",
+        credential: "Yd+X04xskZlGJxFL",
+      },
   ],
-  iceCandidatePoolSize: 3,
+  iceCandidatePoolSize: 0,
   bundlePolicy: "max-bundle" as RTCBundlePolicy,
   rtcpMuxPolicy: "require" as RTCRtcpMuxPolicy,
-  iceTransportPolicy: "all" as RTCIceTransportPolicy,
+  iceTransportPolicy:"all" as RTCIceTransportPolicy ,
 };
 
 export interface UseWebRTCReturn {
@@ -1060,6 +1078,7 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
 
   // 👉 StreamHolder pour garder les vrais objets MediaStream
   const streamHolder = useRef(StreamHolder.getInstance()).current;
+  const pcHolder = useRef(PeerConnectionHolder.getInstance()).current
 
   // Refs
   const peerConnection = useRef<RTCPeerConnection | null>(null);
@@ -1067,6 +1086,7 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
   const currentCallId = useRef<string | null>(null);
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const isAcceptingRef = useRef(false);
+  
 
   const stableUser = useMemo(() => {
     if (!currentUser?._id) return null;
@@ -1122,201 +1142,494 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
   }, [dispatch]);
 
   // ========== CONNEXION PEER ==========
-  const createPeerConnection = useCallback((): RTCPeerConnection => {
-    if (peerConnection.current) {
-      try { peerConnection.current.close(); } catch (e) {}
-      peerConnection.current = null;
+//   const createPeerConnection = useCallback((): RTCPeerConnection => {
+//     if (peerConnection.current) {
+//       try { peerConnection.current.close(); } catch (e) {}
+//       peerConnection.current = null;
+//     }
+// 
+//     const pc = new RTCPeerConnection(configuration);
+// 
+//     (pc as any).onicecandidate = (event: RTCPeerConnectionIceEvent) => {
+//       if (event.candidate && remoteUserId.current && socket && isConnected) {
+//         socket.emit('webrtc:ice-candidate', {
+//           callId: currentCallId.current,
+//           targetUserId: remoteUserId.current,
+//           candidate: event.candidate,
+//         });
+//       }
+//     };
+// 
+//     //  RÉCEPTION DU FLUX DISTANT - DISPATCHER DANS REDUX
+// //     (pc as any).ontrack = (event: RTCTrackEvent) => {
+// //       console.log('📹 ontrack - kind:', event.track?.kind);
+// //       
+// //       if (event.streams && event.streams[0]) {
+// //         const remoteMediaStream = event.streams[0] as any as MediaStream;
+// //         
+// //         console.log('📹 Remote stream reçu - tracks:', 
+// //           remoteMediaStream.getTracks().map((t: any) => t.kind));
+// // 
+// //         // GARDER le vrai stream
+// //         streamHolder.setRemote(remoteMediaStream);
+// // 
+// //         //  DISPATCHER dans Redux
+// //         dispatch(setRemoteStreamAction({
+// //           streamId: remoteMediaStream.id,
+// //           tracks: remoteMediaStream.getTracks().map((t: any) => `${t.kind}:${t.id}`),
+// //         }));
+// // 
+// //         dispatch(setCallStateAction('connected'));
+// //       }
+// //     };
+//   (pc as any).ontrack = (event: RTCTrackEvent) => {
+//    console.log('📹 ontrack - kind:', event.track?.kind, 'streams:', event.streams.length);
+//   
+//     if (event.streams && event.streams[0]) {
+//     const remoteMediaStream = event.streams[0] as any as MediaStream;
+//     
+//     //  Ne dispatcher que si c'est un nouveau stream ou si le stream a changé
+//     const currentRemote = streamHolder.remoteStream;
+//     if (!currentRemote || currentRemote.id !== remoteMediaStream.id) {
+//       console.log('📹 Nouveau remote stream:', remoteMediaStream.id);
+//       streamHolder.setRemote(remoteMediaStream);
+//       
+//       dispatch(setRemoteStreamAction({
+//         streamId: remoteMediaStream.id,
+//         tracks: remoteMediaStream.getTracks().map(t => `${t.kind}:${t.id}`),
+//       }));
+//       
+//       dispatch(setCallStateAction('connected'));
+//     }
+//    }
+//   };
+// 
+//     (pc as any).onconnectionstatechange = () => {
+//       console.log('📡 État connexion:', pc.connectionState);
+//       if (pc.connectionState === 'connected') {
+//         dispatch(setCallStateAction('connected'));
+//       } else if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
+//         console.log('⚠️ Connexion perdue');
+//         endCall();
+//       }
+//     };
+// 
+//     (pc as any).oniceconnectionstatechange = () => {
+//       console.log('🧊 État ICE:', pc.iceConnectionState);
+//     };
+// 
+//     peerConnection.current = pc;
+//     return pc;
+//   }, [socket, isConnected, dispatch]);
+const createPeerConnection = useCallback((): RTCPeerConnection => {
+  // ✅ 1. Nettoyer COMPLÈTEMENT l'ancienne connexion
+  if (peerConnection.current) {
+    const oldPc = peerConnection.current;
+    
+    // Supprimer TOUS les écouteurs avant de fermer
+    (oldPc as any).onicecandidate = null;
+    (oldPc as any).ontrack = null;
+    (oldPc as any).onconnectionstatechange = null;
+    (oldPc as any ).oniceconnectionstatechange = null;
+    
+    // Fermer la connexion
+    try {
+      oldPc.close();
+    } catch (e) {
+      console.warn('⚠️ Erreur fermeture ancienne PC:', e);
     }
+    
+    peerConnection.current = null;
+  }
 
-    const pc = new RTCPeerConnection(configuration);
+  // ✅ 2. Créer la nouvelle connexion
+  const  pc = new RTCPeerConnection(configuration);
+peerConnection.current = pc;
+pcHolder.pc = pc
+  console.log('🆕 Nouvelle PeerConnection créée');
+  
+  // Flag pour éviter les appels multiples à endCall
+  let isClosed = false;
 
-    (pc as any).onicecandidate = (event: RTCPeerConnectionIceEvent) => {
-      if (event.candidate && remoteUserId.current && socket && isConnected) {
-        socket.emit('webrtc:ice-candidate', {
-          callId: currentCallId.current,
-          targetUserId: remoteUserId.current,
-          candidate: event.candidate,
-        });
-      }
-    };
+  // ✅ 3. Configurer les événements
+  (pc as any).onicecandidate = (event: RTCPeerConnectionIceEvent) => {
+    if (isClosed) return;
+    
+    if (event.candidate && remoteUserId.current && socket && isConnected) {
+      console.log('🧊 Nouveau candidat ICE:', event.candidate.type);
+      socket.emit('webrtc:ice-candidate', {
+        callId: currentCallId.current,
+        targetUserId: remoteUserId.current,
+        candidate: event.candidate,
+      });
+    }
+  };
 
-    //  RÉCEPTION DU FLUX DISTANT - DISPATCHER DANS REDUX
-    (pc as any).ontrack = (event: RTCTrackEvent) => {
-      console.log('📹 ontrack - kind:', event.track?.kind);
+(pc as any).ontrack = (event: RTCTrackEvent) => {
+    if (isClosed) return;
+    
+    console.log('📹 ontrack - kind:', event.track?.kind);
+    
+    if (event.streams && event.streams[0]) {
+      const remoteMediaStream = event.streams[0] as any as MediaStream;
       
-      if (event.streams && event.streams[0]) {
-        const remoteMediaStream = event.streams[0] as any as MediaStream;
-        
-        console.log('📹 Remote stream reçu - tracks:', 
-          remoteMediaStream.getTracks().map((t: any) => t.kind));
-
-        // GARDER le vrai stream
+      console.log('📹 Remote stream reçu - tracks:', 
+        remoteMediaStream.getTracks().map((t: any) => t.kind));
+      
+      // ✅ Vérifier si c'est un nouveau stream
+      const currentRemote = streamHolder.remoteStream;
+      if (!currentRemote || currentRemote.id !== remoteMediaStream.id) {
         streamHolder.setRemote(remoteMediaStream);
-
-        //  DISPATCHER dans Redux
+        
         dispatch(setRemoteStreamAction({
           streamId: remoteMediaStream.id,
           tracks: remoteMediaStream.getTracks().map((t: any) => `${t.kind}:${t.id}`),
         }));
-
+        
         dispatch(setCallStateAction('connected'));
+        console.log('✅ Appel connecté !');
       }
-    };
+    }
+  };
 
-    (pc as any).onconnectionstatechange = () => {
-      console.log('📡 État connexion:', pc.connectionState);
-      if (pc.connectionState === 'connected') {
+  (pc as any).onconnectionstatechange = () => {
+    if (isClosed) return;
+    
+    console.log('📡 État connexion:', pc.connectionState);
+    
+    switch (pc.connectionState) {
+      case 'connected':
         dispatch(setCallStateAction('connected'));
-      } else if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
-        console.log('⚠️ Connexion perdue');
+        break;
+        
+      case 'disconnected':
+        // ✅ Attendre un peu avant de considérer comme échoué
+        console.log('⚠️ Connexion déconnectée, attente de reconnexion...');
+        break;
+        
+      case 'failed':
+        console.log('❌ Connexion échouée');
+        isClosed = true;
         endCall();
-      }
-    };
+        break;
+        
+      case 'closed':
+        console.log('📴 Connexion fermée');
+        isClosed = true;
+        break;
+    }
+  };
 
-    (pc as any).oniceconnectionstatechange = () => {
-      console.log('🧊 État ICE:', pc.iceConnectionState);
-    };
+  (pc as any).oniceconnectionstatechange = () => {
+    if (isClosed) return;
+    console.log('🧊 État ICE:', pc.iceConnectionState);
+  };
 
-    peerConnection.current = pc;
-    return pc;
-  }, [socket, isConnected, dispatch]);
+
+  peerConnection.current = pc;
+  return pc;
+}, [socket, isConnected, dispatch]);
 
   // ========== AJOUTER TRACKS ==========
-  const addLocalTracks = useCallback(async (
-    pc: RTCPeerConnection,
-    videoEnabled: boolean = true
-  ): Promise<MediaStream> => {
-    const stream = await getLocalStream(videoEnabled);
-    
-    if (pc.connectionState === 'closed') {
-      throw new Error('PeerConnection fermée');
-    }
+//   const addLocalTracks = useCallback(async (
+//     pc: RTCPeerConnection,
+//     videoEnabled: boolean = true
+//   ): Promise<MediaStream> => {
+//     const stream = await getLocalStream(videoEnabled);
+//     
+//     if (pc.connectionState === 'closed') {
+//       throw new Error('PeerConnection fermée');
+//     }
+// 
+//     stream.getTracks().forEach((track) => {
+//       if (pc.connectionState !== 'closed') {
+//         pc.addTrack(track, stream);
+//         console.log('➕ Track ajouté:', track.kind);
+//       }
+//     });
+//     
+//     return stream;
+//   }, [getLocalStream]);
+const addLocalTracks = useCallback(async (pc, videoEnabled = true) => {
+  //  Utiliser le stream existant du holder si disponible
+  let stream = streamHolder.localStream;
+  
+  if (!stream) {
+    stream = await getLocalStream(videoEnabled);
+  }
+  
+  if (pc.connectionState === 'closed') {
+    throw new Error('PeerConnection fermée');
+  }
 
-    stream.getTracks().forEach((track) => {
-      if (pc.connectionState !== 'closed') {
+  stream.getTracks().forEach(track => {
+    if (pc.connectionState !== 'closed') {
+      //  Vérifier si le track n'est pas déjà ajouté
+      const senders = pc.getSenders();
+      const alreadyAdded = senders.some(sender => sender.track?.id === track.id);
+      if (!alreadyAdded) {
         pc.addTrack(track, stream);
         console.log('➕ Track ajouté:', track.kind);
       }
-    });
-    
-    return stream;
-  }, [getLocalStream]);
+    }
+  });
+  
+  return stream;
+}, [getLocalStream]);
 
   // ========== INITIER APPEL ==========
-  const initiateCall = useCallback(async (
-    targetUserId: string,
-    callType: CallType = 'video'
-  ): Promise<void> => {
-    const user = userRef.current || stableUser;
+//   const initiateCall = useCallback(async (
+//     targetUserId: string,
+//     callType: CallType = 'video'
+//   ): Promise<void> => {
+//     const user = userRef.current || stableUser;
+// 
+//     if (!socket || !isConnected) {
+//       setCallError('Non connecté au serveur');
+//       return;
+//     }
+// 
+//     if (!user || !user._id) {
+//       setCallError('Utilisateur non authentifié');
+//       return;
+//     }
+// 
+//     try {
+//       dispatch(setCallStateAction('calling'));
+//       setCallError(null);
+//       remoteUserId.current = targetUserId;
+// 
+//       const pc = createPeerConnection();
+//       await addLocalTracks(pc, callType === 'video');
+// 
+//       const offer = await pc.createOffer({
+//         offerToReceiveAudio: true,
+//         offerToReceiveVideo: callType === 'video',
+//       });
+//       await pc.setLocalDescription(offer);
+// 
+//       socket.emit('call:initiate', {
+//         targetUserId,
+//         callType,
+//         callerInfo: {
+//           username: user.username,
+//           profilePicture: user.profilePicture,
+//         },
+//         offer: offer,
+//       });
+//       
+//       console.log("📤 Initiation d'appel envoyée");
+// 
+//     } catch (err: any) {
+//       console.error('❌ Erreur initiation appel:', err.message);
+//       setCallError('Erreur lors de l\'initiation de l\'appel');
+//       dispatch(setCallStateAction('idle'));
+//     }
+//   }, [socket, isConnected, stableUser, dispatch, createPeerConnection, addLocalTracks]);
+// ========== INITIER APPEL ==========
+const initiateCall = useCallback(async (
+  targetUserId: string,
+  callType: CallType = 'video'
+): Promise<void> => {
+  const user = userRef.current || stableUser;
 
-    if (!socket || !isConnected) {
-      setCallError('Non connecté au serveur');
-      return;
-    }
+  if (!socket || !isConnected) {
+    setCallError('Non connecté au serveur');
+    return;
+  }
 
-    if (!user || !user._id) {
-      setCallError('Utilisateur non authentifié');
-      return;
-    }
+  if (!user || !user._id) {
+    setCallError('Utilisateur non authentifié');
+    return;
+  }
 
-    try {
-      dispatch(setCallStateAction('calling'));
-      setCallError(null);
-      remoteUserId.current = targetUserId;
+  try {
+    dispatch(setCallStateAction('calling'));
+    setCallError(null);
+    remoteUserId.current = targetUserId;
 
-      const pc = createPeerConnection();
-      await addLocalTracks(pc, callType === 'video');
+    // ✅ 1. Générer le callId UNE SEULE FOIS côté client
+    const callId = `call_${Date.now()}_${user._id}_${targetUserId}`;
+    currentCallId.current = callId;
+    console.log('🆔 CallId généré:', callId);
 
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: callType === 'video',
-      });
-      await pc.setLocalDescription(offer);
+    // ✅ 2. Créer la PeerConnection (les ICE candidates utiliseront ce callId)
+    const pc = createPeerConnection();
+    await addLocalTracks(pc, callType === 'video');
 
-      socket.emit('call:initiate', {
-        targetUserId,
-        callType,
-        callerInfo: {
-          username: user.username,
-          profilePicture: user.profilePicture,
-        },
-        offer: offer,
-      });
-      
-      console.log("📤 Initiation d'appel envoyée");
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: callType === 'video',
+    });
+    await pc.setLocalDescription(offer);
 
-    } catch (err: any) {
-      console.error('❌ Erreur initiation appel:', err.message);
-      setCallError('Erreur lors de l\'initiation de l\'appel');
-      dispatch(setCallStateAction('idle'));
-    }
-  }, [socket, isConnected, stableUser, dispatch, createPeerConnection, addLocalTracks]);
+    // ✅ 3. Envoyer l'initiation AVEC le callId
+    socket.emit('call:initiate', {
+      targetUserId,
+      callType,
+      callId: callId,  // ← ENVOYER LE CALLID !
+      callerInfo: {
+        username: user.username,
+        profilePicture: user.profilePicture,
+      },
+      offer: offer,
+    });
+    
+    console.log("📤 Initiation d'appel envoyée avec callId:", callId);
+
+  } catch (err: any) {
+    console.error('❌ Erreur initiation appel:', err.message);
+    setCallError('Erreur lors de l\'initiation de l\'appel');
+    dispatch(setCallStateAction('idle'));
+  }
+}, [socket, isConnected, stableUser, dispatch, createPeerConnection, addLocalTracks]);
 
   // ========== ACCEPTER APPEL ==========
-  const acceptCall = useCallback(async (): Promise<void> => {
-    if (isAcceptingRef.current) {
-      console.log('⚠️ Acceptation déjà en cours');
-      return;
+//   const acceptCall = useCallback(async (): Promise<void> => {
+//     if (isAcceptingRef.current) {
+//       console.log('⚠️ Acceptation déjà en cours');
+//       return;
+//     }
+// 
+//     const callData = reduxCallData;
+//     if (!callData || !socket) return;
+// 
+//     isAcceptingRef.current = true;
+// 
+//     try {
+//       dispatch(setCallStateAction('connecting'));
+//       
+//       remoteUserId.current = callData.callerId;
+//       currentCallId.current = callData.callId;
+// 
+//       const pc = createPeerConnection();
+//       const videoEnabled = callData.callType === 'video';
+//       await addLocalTracks(pc, videoEnabled);
+// 
+//       if (callData.offer) {
+//         await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+// 
+//         // Traiter les candidats en attente
+//         while (pendingCandidates.current.length > 0) {
+//           const candidate = pendingCandidates.current.shift();
+//           if (candidate && pc.connectionState !== 'closed') {
+//             try {
+//               await pc.addIceCandidate(new RTCIceCandidate(candidate));
+//             } catch (err) {
+//               console.warn('⚠️ Erreur candidat en attente:', err);
+//             }
+//           }
+//         }
+// 
+//         const answer = await pc.createAnswer();
+//         await pc.setLocalDescription(answer);
+// 
+//         socket.emit('call:accept', {
+//           callId: callData.callId,
+//           callerId: callData.callerId,
+//           answer: answer,
+//         });
+// 
+//         dispatch(acceptCallAction());
+//         console.log('✅ Appel accepté');
+//       }
+// 
+//     } catch (err: any) {
+//       console.error('❌ Erreur acceptation:', err.message);
+//       setCallError('Erreur lors de l\'acceptation');
+//       dispatch(setCallStateAction('idle'));
+//       
+//       // Nettoyer en cas d'erreur
+//       streamHolder.setLocal(null);
+//       dispatch(resetStreams());
+//     } finally {
+//       setTimeout(() => {
+//         isAcceptingRef.current = false;
+//       }, 2000);
+//     }
+//   }, [reduxCallData, socket, dispatch, createPeerConnection, addLocalTracks]);
+
+const acceptCall = useCallback(async (): Promise<void> => {
+  if (isAcceptingRef.current) {
+    console.log('⚠️ Acceptation déjà en cours');
+    return;
+  }
+
+  const callData = reduxCallData;
+  if (!callData || !socket) return;
+
+  isAcceptingRef.current = true;
+
+  try {
+    dispatch(setCallStateAction('connecting'));
+    
+    remoteUserId.current = callData.callerId;
+    currentCallId.current = callData.callId;
+
+    // ✅ 1. Créer la PeerConnection
+    const pc = createPeerConnection();
+    
+    // ✅ 2. Ajouter les tracks locaux
+    const videoEnabled = callData.callType === 'video';
+    await addLocalTracks(pc, videoEnabled);
+
+    // ✅ 3. Vérifier qu'on a bien une offre
+    if (!callData.offer) {
+      console.error('❌ Pas d\'offre dans les données d\'appel');
+      throw new Error('Pas d\'offre SDP');
     }
 
-    const callData = reduxCallData;
-    if (!callData || !socket) return;
+    // ✅ 4. Définir la description distante (l'offre reçue)
+    console.log('📥 Traitement de l\'offre distante...');
+    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
 
-    isAcceptingRef.current = true;
-
-    try {
-      dispatch(setCallStateAction('connecting'));
-      
-      remoteUserId.current = callData.callerId;
-      currentCallId.current = callData.callId;
-
-      const pc = createPeerConnection();
-      const videoEnabled = callData.callType === 'video';
-      await addLocalTracks(pc, videoEnabled);
-
-      if (callData.offer) {
-        await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-
-        // Traiter les candidats en attente
-        while (pendingCandidates.current.length > 0) {
-          const candidate = pendingCandidates.current.shift();
-          if (candidate && pc.connectionState !== 'closed') {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (err) {
-              console.warn('⚠️ Erreur candidat en attente:', err);
-            }
-          }
+    // ✅ 5. Traiter les candidats en attente
+    while (pendingCandidates.current.length > 0) {
+      const candidate = pendingCandidates.current.shift();
+      if (candidate && pc.connectionState !== 'closed') {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('✅ Candidat en attente ajouté');
+        } catch (err) {
+          console.warn('⚠️ Erreur candidat en attente:', err);
         }
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        socket.emit('call:accept', {
-          callId: callData.callId,
-          callerId: callData.callerId,
-          answer: answer,
-        });
-
-        dispatch(acceptCallAction());
-        console.log('✅ Appel accepté');
       }
-
-    } catch (err: any) {
-      console.error('❌ Erreur acceptation:', err.message);
-      setCallError('Erreur lors de l\'acceptation');
-      dispatch(setCallStateAction('idle'));
-      
-      // Nettoyer en cas d'erreur
-      streamHolder.setLocal(null);
-      dispatch(resetStreams());
-    } finally {
-      setTimeout(() => {
-        isAcceptingRef.current = false;
-      }, 2000);
     }
-  }, [reduxCallData, socket, dispatch, createPeerConnection, addLocalTracks]);
 
+    // ✅ 6. Créer la RÉPONSE (PAS une offre !)
+    console.log('📤 Création de la réponse...');
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // ✅ 7. Envoyer la réponse
+    socket.emit('call:accept', {
+      callId: callData.callId,
+      callerId: callData.callerId,
+      answer: answer,
+    });
+
+    dispatch(acceptCallAction());
+    console.log('✅ Appel accepté avec succès');
+
+  } catch (err: any) {
+    console.error('❌ Erreur acceptation:', err.message);
+    setCallError('Erreur lors de l\'acceptation: ' + err.message);
+    dispatch(setCallStateAction('idle'));
+    
+    // Nettoyer en cas d'erreur
+    if (peerConnection.current) {
+      peerConnection.current.onconnectionstatechange = null;
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+    streamHolder.cleanup();
+    dispatch(resetStreams());
+  } finally {
+    setTimeout(() => {
+      isAcceptingRef.current = false;
+    }, 2000);
+  }
+}, [reduxCallData, socket, dispatch, createPeerConnection, addLocalTracks]);
   // ========== REFUSER APPEL ==========
   const rejectCall = useCallback((): void => {
     const callData = reduxCallData;
@@ -1349,6 +1662,7 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
 
     // 👉 NETTOYER STREAMHOLDER ET REDUX
     streamHolder.cleanup();
+     pcHolder.pc = null
     dispatch(resetStreams());
 
     dispatch(callEndedAction());
@@ -1384,6 +1698,10 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
 
   // ========== HANDLERS WEBRTC ==========
   const handleWebRTCOffer = useCallback(async (data: any): Promise<void> => {
+     if (!socket || !isConnected) {
+    console.warn('⚠️ Socket non connectée, offre WebRTC ignorée');
+    return;
+    }
     try {
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(
@@ -1402,39 +1720,160 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
   }, []);
 
   const handleWebRTCAnswer = useCallback(async (data: any): Promise<void> => {
-    try {
-      if (peerConnection.current) {
-        await peerConnection.current.setRemoteDescription(
-          new RTCSessionDescription(data.answer)
-        );
-        while (pendingCandidates.current.length > 0) {
-          const candidate = pendingCandidates.current.shift();
-          if (candidate && peerConnection.current) {
-            await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-          }
-        }
-        dispatch(setCallStateAction('connected'));
+  console.log('📥📥📥 handleWebRTCAnswer APPELÉ !!!');
+  console.log('   peerConnection.current:', !!peerConnection.current);
+  console.log('   pendingCandidates:', pendingCandidates.current.length);
+  
+  if (!peerConnection.current) {
+    console.error('❌ Pas de peerConnection');
+    return;
+  }
+  
+ const pc = pcHolder.pc || peerConnection.current;
+  
+  // ✅ VÉRIFIER L'ÉTAT AVANT D'APPLIQUER
+  console.log('   signalingState:', pc.signalingState);
+  
+  if (pc.signalingState === 'stable') {
+    console.log('⚠️ Déjà en état stable - la réponse a déjà été appliquée');
+    console.log('   Traitement des candidats en attente uniquement...');
+    
+    // Traiter les candidats en attente
+    while (pendingCandidates.current.length > 0) {
+      const candidate = pendingCandidates.current.shift();
+      if (candidate && pc) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('✅ Candidat ajouté');
+        } catch (err) {}
       }
-    } catch (err) {
-      console.error('❌ Erreur traitement réponse:', err);
     }
-  }, [dispatch]);
+    
+    dispatch(setCallStateAction('connected'));
+    return; // ✅ SORTIR sans erreur
+  }
+  
+  if (pc.signalingState !== 'have-local-offer') {
+    console.error('❌ État inattendu:', pc.signalingState);
+    return;
+  }
+  
+  try {
+    console.log('📝 setRemoteDescription...');
+    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    console.log('✅ setRemoteDescription OK');
+    
+    // Traiter les candidats en attente
+    const count = pendingCandidates.current.length;
+    console.log(`📤 Traitement de ${count} candidats...`);
+    
+    while (pendingCandidates.current.length > 0) {
+      const candidate = pendingCandidates.current.shift();
+      if (candidate && pc) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('✅ Candidat ajouté');
+        } catch (err) {}
+      }
+    }
+    
+    dispatch(setCallStateAction('connected'));
+    
+  } catch (err) {
+    console.error('❌ Erreur:', err);
+  }
+}, [dispatch]);
 
-  const handleIceCandidate = useCallback(async (data: any): Promise<void> => {
-    if (peerConnection.current && data.candidate) {
-      try {
-        if (!peerConnection.current.remoteDescription) {
-          pendingCandidates.current.push(data.candidate);
-          return;
-        }
-        await peerConnection.current.addIceCandidate(
-          new RTCIceCandidate(data.candidate)
-        );
-      } catch (err) {
-        console.error('❌ Erreur ICE:', err);
-      }
+  // const handleWebRTCAnswer = useCallback(async (data: any): Promise<void> => {
+  //    console.log('📥📥📥 handleWebRTCAnswer APPELÉ !!!');  
+  // console.log('   peerConnection.current:', !!peerConnection.current);
+  // console.log('   pendingCandidates:', pendingCandidates.current.length);
+  // 
+  //   try {
+  //     if (peerConnection.current) {
+  //       await peerConnection.current.setRemoteDescription(
+  //         new RTCSessionDescription(data.answer)
+  //       );
+  //       while (pendingCandidates.current.length > 0) {
+  //         const candidate = pendingCandidates.current.shift();
+  //         if (candidate && peerConnection.current) {
+  //           await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+  //         }
+  //       }
+  //       dispatch(setCallStateAction('connected'));
+  //     }
+  //   } catch (err) {
+  //     console.error('❌ Erreur traitement réponse:', err);
+  //   }
+  // }, [dispatch]);
+// const handleIceCandidate = useCallback(async (data: any): Promise<void> => {
+//   if (!data.candidate) return;
+//   
+//   try {
+//     if (peerConnection.current?.remoteDescription) {
+//       await peerConnection.current.addIceCandidate(
+//         new RTCIceCandidate(data.candidate)
+//       );
+//     } else {
+//       // Mettre en attente
+//       pendingCandidates.current.push(data.candidate);
+//       console.log('⏳ Candidat ICE mis en attente, remote description pas encore définie');
+//     }
+//   } catch (err) {
+//     console.error('❌ Erreur ICE:', err);
+//   }
+// }, []);
+const handleIceCandidate = useCallback(async (data: any): Promise<void> => {
+  if (!data.candidate) return;
+  
+  try {
+    const pc = peerConnection.current;
+    
+    if (!pc) {
+      console.warn('⚠️ Pas de peerConnection, candidat ignoré');
+      return;
     }
-  }, []);
+    
+    if (pc.remoteDescription) {
+      // ✅ Remote description définie → ajouter directement
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        console.log('✅ Candidat ICE ajouté directement');
+      } catch (err) {
+        console.warn('⚠️ Erreur ajout candidat direct:', err);
+      }
+    } else {
+      // Pas encore de remote description → mettre en attente
+      pendingCandidates.current.push(data.candidate);
+      console.log('⏳ Candidat ICE mis en attente (total:', pendingCandidates.current.length + ')');
+    }
+  } catch (err) {
+    console.error('❌ Erreur ICE:', err);
+  }
+}, []);
+
+
+  // const handleIceCandidate = useCallback(async (data: any): Promise<void> => {
+  //   if (peerConnection.current && data.candidate) {
+  //     try {
+  //       if (!peerConnection.current.remoteDescription) {
+  //         pendingCandidates.current.push(data.candidate);
+  //         return;
+  //       }
+  //       await peerConnection.current.addIceCandidate(
+  //         new RTCIceCandidate(data.candidate)
+  //       );
+  //     } catch (err) {
+  //       console.error('❌ Erreur ICE:', err);
+  //     }
+  //   }
+  // }, []);
+  // Nettoyer les candidats en attente après connexion
+useEffect(() => {
+  if (reduxCallState === 'connected') {
+    pendingCandidates.current = [];
+  }
+}, [reduxCallState]);
 
   // ========== ÉCOUTEURS SOCKET ==========
   useEffect(() => {
@@ -1444,25 +1883,13 @@ export const useWebRTC = (currentUser: CurrentUser | null): UseWebRTCReturn => {
       console.log('📳 Sonnerie en cours');
       currentCallId.current = data.callId;
     });
-    // socket.on('call:incoming',(data:any)=>{
-    //    console.log('✅ Appel entrant par l appelant');
-    //    
-    //        dispatch(setIncomingCall({
-    //          callId: data.callId,
-    //          callerId: data.callerId,
-    //          callerName: data.callerName || 'Inconnu',
-    //          callerProfilePicture: data.callerProfilePicture || null,
-    //          callType: data.callType || 'audio',
-    //          offer: data.offer || null,
-    //          timestamp: data.timestamp || new Date().toISOString(),
-    //        }));
-    //   if (data.offer && peerConnection.current) {
-    //     handleWebRTCOffer({ offer: data.offer });
-    //   }
-    //   // dispatch(acceptCallAction())
-    // });
+    socket.on('call:ended', (data: any) => {
+      console.log(`📳 Appel terminé par l'autre`);
+      currentCallId.current = data.callId;
+    });
     socket.on('call:accepted', (data: any) => {
       console.log('✅ Appel accepté par le destinataire');
+       console.log('   ✅  data.answer existe ?', !!data.answer);
       if (data.answer && peerConnection.current) {
         handleWebRTCAnswer({ answer: data.answer });
       }

@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["ExpoEsimModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.esim.ExpoEsimModule"]
+  }
+}

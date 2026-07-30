@@ -66,7 +66,9 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
       const [networkEnabled, setNetworkEnabled] = useState(true)
   
     const bannerRef = useRef<BannerAd>(null);
-
+   const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
+    
   // ==================== CHARGEMENT DU PROFIL ====================
   const loadProfile = useCallback(async () => {
     try {
@@ -127,7 +129,29 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+  //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
 
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
+  };
   // ==================== MISE À JOUR DU STATUT EN LIGNE ====================
   useEffect(() => {
     if (profile && onlineUsers) {
@@ -340,11 +364,17 @@ export default function PublicProfileScreen({ userId,userDistance,userPlace, onC
         </View>
       )}
              {/* Bannière publicitaire */}
-                    <BannerAd 
-                      ref={bannerRef} 
-                      unitId={adUnitId} 
-                      size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
-                    />
+                 <BannerAd 
+                         ref={bannerRef}
+                              key={bannerKey}
+                             unitId={adUnitIdBan} 
+                              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                             onAdLoaded={handleBannerLoaded}
+                             onAdFailedToLoad={handleBannerFailed}
+                             requestOptions={{
+                               requestNonPersonalizedAdsOnly: false,
+                                 }}
+                        />
     </ScrollView>
   );
 }

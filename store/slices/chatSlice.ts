@@ -69,10 +69,10 @@ const chatSlice = createSlice({
           chat.lastMessage = content.length > 35? content.substring(0, 35) + "..." : content;
         }
         
-        // 🔥 Gestion des messages non lus : SEULEMENT pour les messages des AUTRES
+        //  Gestion des messages non lus : SEULEMENT pour les messages des AUTRES
         if (senderId !== currentUserId) {
           chat.unreadCount = (chat.unreadCount || 0) + 1;
-          console.log(`📊 [${chatId}] Nouveau message de ${senderId}, unreadCount: ${chat.unreadCount}`);
+      
         } else {
           console.log(`📤 [${chatId}] Message de l'utilisateur courant, pas d'incrémentation`);
         }
@@ -82,7 +82,7 @@ const chatSlice = createSlice({
           return total + (c.unreadCount || 0);
         }, 0);
         
-        // 🔥 Déplacer le chat en HAUT (s'il n'est pas déjà premier)
+        //  Déplacer le chat en HAUT (s'il n'est pas déjà premier)
         if (chatIndex !== 0) {
           const [movedChat] = state.chats.splice(chatIndex, 1);
           state.chats.unshift(movedChat);
@@ -115,7 +115,7 @@ const chatSlice = createSlice({
         const oldCount = chat.unreadCount || 0;
         chat.unreadCount = unreadCount;
         state.unreadCount = state.unreadCount - oldCount + unreadCount;
-        console.log(`📊 [${chatId}] Mise à jour unreadCount: ${oldCount} → ${unreadCount}, total: ${state.unreadCount}`);
+      
       }
     },
     

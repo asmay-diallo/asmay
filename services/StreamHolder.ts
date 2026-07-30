@@ -1,47 +1,3 @@
-// // services/StreamHolder.ts
-// 
-// import { MediaStream } from 'react-native-webrtc';
-// 
-// /**
-//  * Simple holder qui garde une référence aux MediaStream
-//  * pour éviter qu'ils soient garbage-collectés
-//  */
-// class StreamHolder {
-//   private static instance: StreamHolder;
-//   
-//   localStream: MediaStream | null = null;
-//   remoteStream: MediaStream | null = null;
-// 
-//   static getInstance(): StreamHolder {
-//     if (!StreamHolder.instance) {
-//       StreamHolder.instance = new StreamHolder();
-//     }
-//     return StreamHolder.instance;
-//   }
-// 
-//   setLocal(stream: MediaStream | null) {
-//     if (this.localStream) {
-//       try { this.localStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-//     }
-//     this.localStream = stream;
-//   }
-// 
-//   setRemote(stream: MediaStream | null) {
-//     if (this.remoteStream) {
-//       try { this.remoteStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-//     }
-//     this.remoteStream = stream;
-//   }
-// 
-//   cleanup() {
-//     this.setLocal(null);
-//     this.setRemote(null);
-//   }
-// }
-// 
-// export default StreamHolder;
-
-// services/StreamHolder.ts
 
 import { MediaStream } from 'react-native-webrtc';
 
@@ -77,6 +33,13 @@ class StreamHolder {
   }
 
   setRemote(stream: MediaStream | null): void {
+
+  console.log('📥📥📥 setRemote APPELÉ 📥📥📥');
+  console.log('   stream:', !!stream);
+  console.log('   stream id:', stream?.id);
+  // console.log('   currentCallId:', this.currentCallId);
+  console.trace('   Stack trace:');  // ← Voir QUI appelle setRemote(null)
+  
     if (this.remoteStream && this.remoteStream !== stream) {
       try {
         this.remoteStream.getTracks().forEach(t => t.stop());

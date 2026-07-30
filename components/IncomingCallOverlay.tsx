@@ -84,15 +84,18 @@ const IncomingCallOverlay: React.FC<{ currentUser: any }> = ({ currentUser }) =>
   }, [isIncomingCall, callData]);
 
   const handleAccept = async () => {
-    dispatch(acceptCall());
+    //  Accepter WebRTC en premier (le plus long)
     await webrtcAcceptCall();
+    //  Mettre à jour Redux seulement après succès
+    dispatch(acceptCall());
     
+    //  Naviguer
     router.push({
       pathname: '/(main)/(asmay)/call',
       params: {
         callId: callData?.callId,
         callType: callData?.callType || 'audio',
-        isIncoming: 'false',
+        isIncoming: 'true',
         callerId: callData?.callerId,
         callerName: callData?.callerName,
       },
@@ -100,8 +103,10 @@ const IncomingCallOverlay: React.FC<{ currentUser: any }> = ({ currentUser }) =>
   };
 
   const handleReject = () => {
-    dispatch(rejectCall());
-    webrtcRejectCall();
+     //  Informer le serveur d'abord
+  webrtcRejectCall();
+  //  Nettoyer Redux
+  dispatch(rejectCall());
   };
 
   if (!isIncomingCall || !callData) return null;

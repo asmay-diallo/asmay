@@ -33,7 +33,7 @@ import { useChatsQuery, useDeleteChat, useMarkChatAsRead } from "../../../hooks/
 import Input from "@/components/Input";
 
 // Configuration publicitaire
-const adUnitId:any = __DEV__
+const adUnitIdBan:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
   :Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
@@ -42,6 +42,8 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const { onlineUsers } = useSocket();
   const bannerRef = useRef<BannerAd>(null);
+  const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
   const queryClient =useQueryClient()
 
   // Hook Redux pour les chats
@@ -86,6 +88,29 @@ export default function MessagesScreen() {
       refetch();
     }, [refetch])
   );
+     //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
+
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
+  };
 
   // const handleRefresh = () => {
   //   setRefreshing(true);
@@ -296,9 +321,15 @@ export default function MessagesScreen() {
       />
       
       <BannerAd 
-        ref={bannerRef} 
-        unitId={adUnitId} 
-        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
+         ref={bannerRef}
+        key={bannerKey}
+        unitId={adUnitIdBan} 
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+         onAdLoaded={handleBannerLoaded}
+          onAdFailedToLoad={handleBannerFailed}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: false,
+          }}
       />
     </ImageBackground>
   );

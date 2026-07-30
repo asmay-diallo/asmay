@@ -54,7 +54,7 @@ interface EditedData {
 }
 
 // Configuration publicitaire
-const adUnitId:any = __DEV__
+const adUnitIdBan:any = __DEV__
   ? TestIds.ADAPTIVE_BANNER
   :Constants.expoConfig?.extra?.ANDROID_BANNER_UNIT_ID;
 
@@ -90,7 +90,8 @@ export default function ProfileScreen() {
   // const { mutate: removePhoto } = useRemoveProfilePicture();
 
   const bannerRef = useRef<BannerAd>(null);
-
+const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   const router = useRouter();
 
@@ -141,6 +142,29 @@ useEffect(() => {
   
       return () => unsubscribeNetInfo();
     }, []);
+      //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
+
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
+  };
 
   const loadExchangeRate = async () => {
     setLoadingRate(true);
@@ -349,11 +373,17 @@ useEffect(() => {
           resizeMode="cover"
         style={styles.container}>
             {/* Bannière publicitaire */}
-                    <BannerAd 
-                      ref={bannerRef} 
-                      unitId={adUnitId} 
-                      size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
-                    />
+                  <BannerAd 
+                         ref={bannerRef}
+                              key={bannerKey}
+                             unitId={adUnitIdBan} 
+                              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                             onAdLoaded={handleBannerLoaded}
+                             onAdFailedToLoad={handleBannerFailed}
+                             requestOptions={{
+                               requestNonPersonalizedAdsOnly: false,
+                                 }}
+                        />
     <ScrollView >
          
       <Text style={styles.title}>Mon compte</Text>

@@ -103,7 +103,8 @@ const NotificationsScreen: React.FC = () => {
   const [networkEnabled, setNetworkEnabled] = useState(true)
 
   const bannerRef = useRef<BannerAd>(null);
-
+const [bannerKey, setBannerKey] = useState(0);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
    //  TanStack Query=============
     const { data: signals = [], isLoading, refetch } = useReceivedSignalsQuery();
     const { mutate: acceptSignal, isPending: accepting } = useAcceptSignal();
@@ -233,7 +234,7 @@ const NotificationsScreen: React.FC = () => {
           const reward = pendingRewardRef.current;
           Alert.alert(
             "Félicitations 👋 !",
-            `Vous avez gagné ${reward.amount} ${reward.type}. Continuez à regarder les annonces pour gagner plus de coins`,
+            `Vous avez gagné ${reward.amount} ${reward.type}. Continuez à regarder les annonces pour gagner plus de pièces`,
             [{ text: "OK", onPress: () => console.log("Alerte fermée") }]
           );
           pendingRewardRef.current = null;
@@ -260,6 +261,29 @@ const NotificationsScreen: React.FC = () => {
       unsubscribeError();
     };
   }, []);
+    //  Gestionnaire de rechargement de bannière
+  useEffect(() => {
+    return () => {
+      if (bannerRef.current) {
+        clearTimeout(bannerRef.current);
+      }
+    };
+  }, []);
+
+  //  Callbacks pour la bannière
+  const handleBannerLoaded = () => {
+    setBannerLoaded(true);
+  };
+
+  const handleBannerFailed = (error: any) => {
+    setBannerLoaded(false);
+    
+    // Réessayer après 30 secondes
+    if (bannerRef.current) clearTimeout(bannerRef.current);
+    bannerRef.current = setTimeout(() => {
+      setBannerKey(prev => prev + 1);
+    }, 5000);
+  };
 
   const setupSocketListeners = (): void => {
     if (socket) {
@@ -711,10 +735,16 @@ const NotificationsScreen: React.FC = () => {
       resizeMode="cover"
     style={styles.container}>
        {/* Bannière publicitaire */}
-                        <BannerAd 
-                          ref={bannerRef} 
-                          unitId={adUnitIdBan} 
-                          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
+                      <BannerAd 
+                         ref={bannerRef}
+                              key={bannerKey}
+                             unitId={adUnitIdBan} 
+                              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                             onAdLoaded={handleBannerLoaded}
+                             onAdFailedToLoad={handleBannerFailed}
+                             requestOptions={{
+                               requestNonPersonalizedAdsOnly: false,
+                                 }}
                         />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Signaux</Text>

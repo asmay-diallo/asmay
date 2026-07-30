@@ -702,10 +702,461 @@
 // });
 // 
 // export default VideoCallScreen;
+// 
+// import React, { useEffect, useRef, useState } from 'react';
+// import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar,Image} from 'react-native';
+// import { RTCView } from 'react-native-webrtc';
+// import { useRouter } from 'expo-router';
+// import { useRoute } from '@react-navigation/native';
+// import { Ionicons } from '@expo/vector-icons';
+// import { useSelector } from 'react-redux';
+// import { RootState } from '../../../store/store';
+// import { useWebRTC } from '../../../hooks/webrtc/useCall';
+// import { useAuth } from '../../../hooks/useAuth';
+// import StreamHolder from '../../../services/StreamHolder';
+// 
+// const VideoCallScreen: React.FC = () => {
+//   const router = useRouter();
+//   const route = useRoute();
+//   const { user: currentUser } = useAuth();
+//   
+//   const params = route.params as any;
+//   const { callType = 'video', isIncoming = 'false', callerId, callerName } = params || {};
+// 
+//   const reduxCallState = useSelector((state: RootState) => state.incomingCall.callState);
+//   const isCallAccepted = useSelector((state:RootState)=> state.incomingCall.isCallAccepted)
+//   const callData =  useSelector((state:RootState)=> state.incomingCall.callData)
+//   const myId = currentUser._id
+// 
+//   const {
+//     isMuted, isCameraOn,
+//     initiateCall, acceptCall, endCall,
+//     toggleMic, toggleCamera,
+//     isCallActive, callError,
+//   } = useWebRTC(currentUser);
+// 
+//   //  FORCER LE RE-RENDER QUAND LES STREAMS CHANGENT
+//   const [, forceUpdate] = useState(0);
+//   const holder = StreamHolder.getInstance();
+// 
+//   useEffect(() => {
+//     console.log("User appellé :",callData?.calleeName)
+//     const unsubscribe = holder.subscribe(() => {
+//       console.log('🔄 StreamHolder → forceUpdate');
+//       forceUpdate(prev => prev + 1);
+//     });
+//     forceUpdate(prev => prev + 1);
+//     return unsubscribe;
+//   }, []);
+// 
+//   //  LECTURE DIRECTE (pas via le hook)
+//   const localStream = holder.localStream;
+//   const remoteStream = holder.remoteStream;
+// 
+//   const hasInitiatedRef = useRef(false);
+// // 
+// //   useEffect(() => {
+// //     if (isIncoming === 'false' && callerId && !hasInitiatedRef.current) {
+// //       hasInitiatedRef.current = true;
+// //       setTimeout(() => initiateCall(callerId, callType), 500);
+// //     }
+// //     if (isIncoming === 'true' && !hasInitiatedRef.current) {
+// //       hasInitiatedRef.current = true;
+// //       setTimeout(() => acceptCall(), 500);
+// //     }
+// //   }, []);
+// 
+//   useEffect(() => {
+//     if (callError || endCall) setTimeout(() => router.back(), 1000);
+//   }, [callError]);
+// 
+//   const handleEndCall = () => { endCall(); router.back(); };
+// 
+//   // Loading
+//   if (!remoteStream && reduxCallState !== 'connected') {
+//     return (
+//       
+//       <SafeAreaView style={styles.container}>
+//         <View style={styles.loadingOverlay}>
+//           <ActivityIndicator size="large" color="#fff" />
+//           <Text style={styles.loadingText}>Connexion...</Text>
+//           <TouchableOpacity style={styles.cancelButton} onPress={handleEndCall}>
+//             <Text style={styles.cancelText}>Annuler</Text>
+//           </TouchableOpacity>
+//         </View>
+//       </SafeAreaView>
+//     );
+//   }
+//   // Appel actif
+// if (isCallAccepted && reduxCallState ==='connected') {
+//   return (
+//       
+//     <SafeAreaView style={styles.container}>
+//       <StatusBar barStyle="light-content" hidden={callType === 'video'} />
+// 
+//       {/* Remote video */}
+//       {remoteStream && callType === 'video' && (
+//        <View >
+//         <RTCView 
+//         style={styles.remoteVideo} 
+//         streamURL={remoteStream.toURL()} 
+//         objectFit="cover"
+//          mirror={true} />
+//        </View>
+//       )}
+// 
+//       {/* Audio mode */}
+//       { callType === 'audio' && (
+//         <View style={styles.audioContainer}>
+//           { callData?.callerProfilePicture ?(
+//              <View style={styles.avatarLarge}>
+//                 <Image source={{ uri: myId === callerId ? callData.calleeProfilePicture:callData.callerProfilePicture  }} 
+//                 />
+//                 </View>
+//           ):(
+//              <View style={styles.avatarLarge}>
+//             <Ionicons name="person" size={80} color="#fff" />
+//           </View>
+//          ) }
+//          
+// 
+//           <Text style={styles.audioName}>{myId === callerId ? callData?.calleeName : callData?.callerName}</Text>
+//           <Text style={styles.audioStatus}>Appel en cours...</Text>
+//         </View>
+//       )}
+// 
+//       {/* Local video PIP */}
+//       {localStream &&  callType === 'video' && (
+//         <View style={styles.localVideoContainer}>
+//           <RTCView 
+//           style={styles.localVideo}
+//           streamURL={localStream.toURL()} 
+//           objectFit="cover" 
+//            />
+//         </View>
+//       )}
+// 
+//       {/* Controls */}
+//       <View style={styles.controls}>
+//         <TouchableOpacity style={[styles.ctrlBtn, isMuted && styles.ctrlBtnActive]} onPress={toggleMic}>
+//           <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={24} color="#fff" />
+//         </TouchableOpacity>
+//         {callType === 'video' && (
+//           <TouchableOpacity style={[styles.ctrlBtn, !isCameraOn && styles.ctrlBtnActive]} onPress={toggleCamera}>
+//             <Ionicons name={isCameraOn ? 'videocam' : 'videocam-off'} size={24} color="#fff" />
+//           </TouchableOpacity>
+//         )}
+//         <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
+//           <Ionicons name="call" size={30} color="#fff" />
+//         </TouchableOpacity>
+//       </View>
+//     </SafeAreaView>
+//   );
+// }
+//   
+// };
+// 
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: '#1a1a1a' },
+//   // remoteVideoContainer:{
+//   //   // To implement the style here
+//   // },
+//   remoteVideo: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+//   localVideoContainer: {
+//     position: 'absolute', top: 60, right: 16, width: 130, height: 180,
+//     borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', zIndex: 10,
+//   },
+//   localVideo: { width: '100%', height: '100%' },
+//   controls: { position: 'absolute', bottom: 50, left: 0, right: 0 },
+//   controlsRow: { flexDirection: 'row', justifyContent: 'center', gap: 25 },
+//   ctrlBtn: {
+//     width: 55, height: 55, borderRadius: 28,
+//     backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center',
+//   },
+//   ctrlBtnActive: { backgroundColor: '#ff4444' },
+//   endBtn: {
+//     width: 65, height: 65, borderRadius: 33,
+//     backgroundColor: '#ff4444', justifyContent: 'center', alignItems: 'center',
+//   },
+//   audioContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+//   avatarLarge: {
+//     width: 150, height: 150, borderRadius: 75,
+//     backgroundColor: '#444', justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+//   },
+//   audioName: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
+//   audioStatus: { fontSize: 16, color: '#aaa' },
+//   loadingOverlay: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+//   loadingText: { color: '#fff', marginTop: 15, fontSize: 16 },
+//   cancelButton: {
+//     marginTop: 40, backgroundColor: '#ff4444',
+//     paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25,
+//   },
+//   cancelText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+// });
+// 
+// export default VideoCallScreen;
+// 
+// import React, { useEffect, useRef, useState } from 'react';
+// import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar, Image } from 'react-native';
+// import { RTCView } from 'react-native-webrtc';
+// import { useRouter } from 'expo-router';
+// import { useRoute } from '@react-navigation/native';
+// import { Ionicons } from '@expo/vector-icons';
+// import { useSelector } from 'react-redux';
+// import { RootState } from '../../../store/store';
+// import { useWebRTC } from '../../../hooks/webrtc/useCall';
+// import { useAuth } from '../../../hooks/useAuth';
+// import StreamHolder from '../../../services/StreamHolder';
+// 
+// const VideoCallScreen: React.FC = () => {
+//   const [streamKey, setStreamKey] = useState(0);
+//   
+//   const router = useRouter();
+//   const route = useRoute();
+//   const { user: currentUser } = useAuth();
+//   
+//   const params = route.params as any;
+//   const { callType = 'video', isIncoming = 'false', callerId, callerName, alreadyAccepted } = params || {};
+// 
+//   const reduxCallState = useSelector((state: RootState) => state.incomingCall.callState);
+//   const isCallAccepted = useSelector((state: RootState) => state.incomingCall.isCallAccepted);
+//   const callData = useSelector((state: RootState) => state.incomingCall.callData);
+//   const myId = currentUser?._id;
+//   
+// 
+//   const {
+//     isMuted, isCameraOn,
+//     initiateCall, acceptCall, endCall,
+//     toggleMic, toggleCamera,
+//     isCallActive, callError,
+//   } = useWebRTC(currentUser);
+// 
+//   // ✅ FORCER LE RE-RENDER
+//   const [, forceUpdate] = useState(0);
+//   const holder = StreamHolder.getInstance();
+// 
+//   useEffect(() => {
+//     console.log('📺 VideoCallScreen monté');
+//     console.log('   isIncoming:', isIncoming);
+//     console.log('   alreadyAccepted:', alreadyAccepted);
+//     console.log('   callerId:', callerId);
+//     
+//     const unsubscribe = holder.subscribe(() => {
+//       console.log('🔄 StreamHolder → forceUpdate VideoCallScreen');
+//       forceUpdate(prev => prev + 1);
+//     });
+//     forceUpdate(prev => prev + 1);
+//     return unsubscribe;
+//   }, []);
+// 
+//   const localStream = holder.localStream;
+//   const remoteStream = holder.remoteStream;
+// 
+//   const hasInitiatedRef = useRef(false);
+// 
+//   // ✅ LANCER L'APPEL
+//   // useEffect(() => {
+//   //   if (hasInitiatedRef.current) return;
+//   //   
+//   //   const isIncomingCall = isIncoming === 'true';
+//   //   const wasAlreadyAccepted = alreadyAccepted === 'true';
+//   //   
+//   //   if (wasAlreadyAccepted) {
+//   //     console.log('📞 Appel déjà accepté par l\'overlay');
+//   //     hasInitiatedRef.current = true;
+//   //     return;
+//   //   }
+//   //   
+//   //   hasInitiatedRef.current = true;
+//   //   
+//   //   if (isIncomingCall) {
+//   //     console.log('📞 Acceptation de l\'appel entrant...');
+//   //     setTimeout(() => acceptCall(), 500);
+//   //   } else if (callerId) {
+//   //     console.log('📞 Initiation de l\'appel sortant vers:', callerId);
+//   //     setTimeout(() => initiateCall(callerId, callType), 500);
+//   //   }
+//   // }, [isIncoming, callerId, alreadyAccepted]);
+// 
+// useEffect(() => {
+//   if (remoteStream) {
+//     // Forcer le re-render de RTCView
+//     setStreamKey(prev => prev + 1);
+//   }
+// }, [remoteStream?.id]);
+//   // VideoCallScreen.tsx
+// useEffect(() => {
+//   if (hasInitiatedRef.current) return;
+//   
+//   const isIncomingCall = isIncoming === 'true';
+//   const wasAlreadyAccepted = alreadyAccepted === 'true';
+//   
+//   console.log('📞 VideoCallScreen useEffect:', { isIncomingCall, wasAlreadyAccepted, callerId });
+//   
+//   // ✅ Si l'appel est déjà en cours (callerId présent mais alreadyAccepted = false)
+//   // C'est l'APPELANT qui arrive, il ne doit rien faire
+//   if (!isIncomingCall && !wasAlreadyAccepted && callerId) {
+//     console.log('📞 APPELANT - appel déjà initié, rien à faire');
+//     hasInitiatedRef.current = true;
+//     return;
+//   }
+//   
+//   // ✅ Si alreadyAccepted = true, l'overlay a déjà accepté
+//   if (wasAlreadyAccepted) {
+//     console.log('📞 Déjà accepté par l\'overlay');
+//     hasInitiatedRef.current = true;
+//     return;
+//   }
+//   
+//   hasInitiatedRef.current = true;
+//   
+//   if (isIncomingCall) {
+//     console.log('📞 Acceptation de l\'appel entrant...');
+//     setTimeout(() => acceptCall(), 500);
+//   }
+// }, []);
+//   // ✅ DEBUG
+//   useEffect(() => {
+//     console.log('📺📺📺 VideoCallScreen STATE 📺📺📺');
+//     console.log('   localStream:', !!localStream);
+//     console.log('   remoteStream:', !!remoteStream);
+//     console.log('   remoteStream tracks:', remoteStream?.getTracks().map(t => `${t.kind}:${t.readyState}`));
+//     console.log('   reduxCallState:', reduxCallState);
+//     console.log('   isCallAccepted:', isCallAccepted);
+//   }, [localStream, remoteStream, reduxCallState, isCallAccepted]);
+// 
+//   useEffect(() => {
+//     if (callError) setTimeout(() => router.back(), 1000);
+//   }, [callError]);
+// 
+//   const handleEndCall = () => { endCall(); router.back(); };
+// 
+//   // ✅ CONDITION D'AFFICHAGE SIMPLIFIÉE
+//   const hasRemoteStream = !!remoteStream && remoteStream.getTracks().length > 0;
+//   const isConnected = reduxCallState === 'connected';
+//   const showCall = hasRemoteStream || isConnected;
+// 
+//   console.log('📺 Décision affichage:');
+//   console.log('   hasRemoteStream:', hasRemoteStream);
+//   console.log('   isConnected:', isConnected);
+//   console.log('   showCall:', showCall);
+// 
+//   if (!showCall) {
+//     return (
+//       <SafeAreaView style={styles.container}>
+//         <View style={styles.loadingOverlay}>
+//           <ActivityIndicator size="large" color="#fff" />
+//           <Text style={styles.loadingText}>Connexion...</Text>
+//           <Text style={{ color: '#aaa', fontSize: 12, marginTop: 8 }}>
+//             {reduxCallState} | remote: {hasRemoteStream ? 'oui' : 'non'}
+//           </Text>
+//           <TouchableOpacity style={styles.cancelButton} onPress={handleEndCall}>
+//             <Text style={styles.cancelText}>Annuler</Text>
+//           </TouchableOpacity>
+//         </View>
+//       </SafeAreaView>
+//     );
+//   }
+// 
+//   // ✅ APPEL ACTIF
+//   return (
+//     <SafeAreaView style={styles.container}>
+//      
+//       <StatusBar barStyle="light-content" hidden={callType === 'video'} />
+// 
+//       {/* Remote video */}
+//       {remoteStream && callType === 'video' && (
+//         <RTCView 
+//          key={remoteStream._id}
+//           style={styles.remoteVideo} 
+//           streamURL={remoteStream.id} 
+//           objectFit="cover"
+//         />
+//    
+//       )}
+// 
+//       {/* Audio mode */}
+//       {callType === 'audio' && !remoteStream && (
+//         <View style={styles.audioContainer}>
+//           <View style={styles.avatarLarge}>
+//             <Ionicons name="person" size={80} color="#fff" />
+//           </View>
+//           <Text style={styles.audioName}>{callerName || 'Appel'}</Text>
+//           <Text style={styles.audioStatus}>Appel en cours...</Text>
+//         </View>
+//       )}
+// 
+//       {/* Local video PIP */}
+//       {localStream && callType === 'video' && (
+//         <View style={styles.localVideoContainer}>
+//           <RTCView 
+//             style={styles.localVideo}
+//             streamURL={localStream.id} 
+//             objectFit="cover" 
+//           />
+//         </View>
+//       )}
+// 
+//       {/* Controls */}
+//       <View style={styles.controls}>
+//         <View style={styles.controlsRow}>
+//           <TouchableOpacity style={[styles.ctrlBtn, isMuted && styles.ctrlBtnActive]} onPress={toggleMic}>
+//             <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={24} color="#fff" />
+//           </TouchableOpacity>
+//           {callType === 'video' && (
+//             <TouchableOpacity style={[styles.ctrlBtn, !isCameraOn && styles.ctrlBtnActive]} onPress={toggleCamera}>
+//               <Ionicons name={isCameraOn ? 'videocam' : 'videocam-off'} size={24} color="#fff" />
+//             </TouchableOpacity>
+//           )}
+//           <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
+//             <Ionicons name="call" size={30} color="#fff" />
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+//     </SafeAreaView>
+//   );
+// };
+// 
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: 'transparent' },
+//   remoteVideo: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+//   localVideoContainer: {
+//     position: 'absolute', top: 60, right: 16, width: 130, height: 180,
+//     borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', zIndex: 10,
+//   },
+//   localVideo: { width: '100%', height: '100%' },
+//   controls: { position: 'absolute', bottom: 50, left: 0, right: 0 },
+//   controlsRow: { flexDirection: 'row', justifyContent: 'center', gap: 25 },
+//   ctrlBtn: {
+//     width: 55, height: 55, borderRadius: 28,
+//     backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center',
+//   },
+//   ctrlBtnActive: { backgroundColor: '#ff4444' },
+//   endBtn: {
+//     width: 65, height: 65, borderRadius: 33,
+//     backgroundColor: '#ff4444', justifyContent: 'center', alignItems: 'center',
+//   },
+//   audioContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+//   avatarLarge: {
+//     width: 150, height: 150, borderRadius: 75,
+//     backgroundColor: '#444', justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+//   },
+//   audioName: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
+//   audioStatus: { fontSize: 16, color: '#aaa' },
+//   loadingOverlay: { flex: 1, backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+//   loadingText: { color: '#fff', marginTop: 15, fontSize: 16 },
+//   cancelButton: {
+//     marginTop: 40, backgroundColor: '#ff4444',
+//     paddingHorizontal: 30, paddingVertical: 12, borderRadius: 25,
+//   },
+//   cancelText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+// });
+// 
+// export default VideoCallScreen;
 
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar,Image} from 'react-native';
-import { RTCView } from 'react-native-webrtc';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar } from 'react-native';
+import { RTCView, MediaStream } from 'react-native-webrtc';
 import { useRouter } from 'expo-router';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -719,67 +1170,123 @@ const VideoCallScreen: React.FC = () => {
   const router = useRouter();
   const route = useRoute();
   const { user: currentUser } = useAuth();
-  
+
   const params = route.params as any;
-  const { callType = 'video', isIncoming = 'false', callerId, callerName } = params || {};
+  const { callType = 'video', isIncoming = 'false', callerId, callerName, alreadyAccepted } = params || {};
 
   const reduxCallState = useSelector((state: RootState) => state.incomingCall.callState);
-  const isCallAccepted = useSelector((state:RootState)=> state.incomingCall.isCallAccepted)
-  const callData =  useSelector((state:RootState)=> state.incomingCall.callData)
-  const myId = currentUser._id
+  const isCallAccepted = useSelector((state: RootState) => state.incomingCall.isCallAccepted);
+  const callData = useSelector((state: RootState) => state.incomingCall.callData);
 
   const {
     isMuted, isCameraOn,
     initiateCall, acceptCall, endCall,
     toggleMic, toggleCamera,
-    isCallActive, callError,
+    callError,
   } = useWebRTC(currentUser);
 
-  // 👉 FORCER LE RE-RENDER QUAND LES STREAMS CHANGENT
   const [, forceUpdate] = useState(0);
   const holder = StreamHolder.getInstance();
 
+  const [displayRemote, setDisplayRemote] = useState<MediaStream | null>(null);
+  const [displayLocal, setDisplayLocal] = useState<MediaStream | null>(null);
+
   useEffect(() => {
-    console.log("User appellé :",callData?.calleeName)
+    console.log('📺 VideoCallScreen monté');
+    console.log('   isIncoming:', isIncoming);
+    console.log('   callerId:', callerId);
+
     const unsubscribe = holder.subscribe(() => {
-      console.log('🔄 StreamHolder → forceUpdate');
+      const r = holder.remoteStream;
+      const l = holder.localStream;
+
+      //  Ne mettre à jour que si le stream a des tracks live
+      if (r && r.getTracks().length > 0) {
+        setDisplayRemote(r);
+      }
+      if (l && l.getTracks().length > 0) {
+        setDisplayLocal(l);
+      }
+
       forceUpdate(prev => prev + 1);
     });
+
+    // Initialisation
+    const r = holder.remoteStream;
+    const l = holder.localStream;
+    if (r && r.getTracks().length > 0) setDisplayRemote(r);
+    if (l && l.getTracks().length > 0) setDisplayLocal(l);
     forceUpdate(prev => prev + 1);
+
     return unsubscribe;
   }, []);
-
-  // 👉 LECTURE DIRECTE (pas via le hook)
-  const localStream = holder.localStream;
-  const remoteStream = holder.remoteStream;
 
   const hasInitiatedRef = useRef(false);
 
   useEffect(() => {
-    if (isIncoming === 'false' && callerId && !hasInitiatedRef.current) {
+    if (hasInitiatedRef.current) return;
+
+    const isIncomingCall = isIncoming === 'true';
+    const wasAlreadyAccepted = alreadyAccepted === 'true';
+
+    console.log('📞 VideoCallScreen useEffect:', { isIncomingCall, wasAlreadyAccepted, callerId });
+
+    if (!isIncomingCall && !wasAlreadyAccepted && callerId) {
+      console.log('📞 APPELANT - appel déjà initié, rien à faire');
       hasInitiatedRef.current = true;
-      setTimeout(() => initiateCall(callerId, callType), 500);
+      return;
     }
-    if (isIncoming === 'true' && !hasInitiatedRef.current) {
+
+    if (wasAlreadyAccepted) {
+      console.log('📞 Déjà accepté par l\'overlay');
       hasInitiatedRef.current = true;
+      return;
+    }
+
+    hasInitiatedRef.current = true;
+
+    if (isIncomingCall) {
+      console.log('📞 Acceptation de l\'appel entrant...');
       setTimeout(() => acceptCall(), 500);
     }
   }, []);
 
   useEffect(() => {
-    if (callError || endCall) setTimeout(() => router.back(), 1000);
+    console.log('📺📺📺 VideoCallScreen STATE 📺📺📺');
+    console.log('   displayLocal:', !!displayLocal);
+    console.log('   displayRemote:', !!displayRemote);
+    console.log('   Stream Local :', displayLocal);
+    console.log('   Stream Distant :', displayRemote);
+    console.log('   remoteStream tracks:', displayRemote?.getTracks().map(t => `${t.kind}:${t.readyState}`));
+    console.log('   reduxCallState:', reduxCallState);
+    console.log('   isCallAccepted:', isCallAccepted);
+  }, [displayLocal, displayRemote, reduxCallState, isCallAccepted]);
+
+  useEffect(() => {
+    if (callError) setTimeout(() => router.back(), 1000);
   }, [callError]);
 
   const handleEndCall = () => { endCall(); router.back(); };
 
-  // Loading
-  if (!remoteStream && reduxCallState !== 'connected') {
+  const hasRemoteStream = !!displayRemote && displayRemote.getTracks().length > 0;
+  const isConnected = reduxCallState === 'connected';
+  const showCall = hasRemoteStream || isConnected;
+
+  console.log('📺 Décision affichage:');
+  console.log('   hasRemoteStream:', hasRemoteStream);
+  console.log('   isConnected:', isConnected);
+  console.log('   showCall:', showCall);
+
+  if (!showCall) {
     return (
-      
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.loadingText}>Connexion...</Text>
+          <Text style={{ color: '#aaa', fontSize: 12, marginTop: 8 }}>
+            {reduxCallState} | remote: {hasRemoteStream ? 'oui' : 'non'}
+          </Text>
           <TouchableOpacity style={styles.cancelButton} onPress={handleEndCall}>
             <Text style={styles.cancelText}>Annuler</Text>
           </TouchableOpacity>
@@ -787,86 +1294,76 @@ const VideoCallScreen: React.FC = () => {
       </SafeAreaView>
     );
   }
-  // Appel actif
-if (isCallAccepted && reduxCallState ==='connected') {
+
   return (
-      
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" hidden={callType === 'video'} />
 
-      {/* Remote video */}
-      {remoteStream && callType === 'video' && (
-       <View >
-        <RTCView 
-        style={styles.remoteVideo} 
-        streamURL={remoteStream.toURL()} 
-        objectFit="cover"
-         mirror={true} />
-       </View>
-      )}
+      {/*  Remote video - utilise displayRemote */}
+      {displayRemote && callType === 'video' ? (
+        <RTCView
+          key={displayRemote.id}
+          style={styles.remoteVideo}
+          streamURL={displayRemote.toURL()}
+          objectFit="cover"
+        />
+      ) : callType === 'video' ? (
+        <View style={[styles.remoteVideo, { backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={{ color: '#fff', marginTop: 15 }}>En attente du flux distant...</Text>
+        </View>
+      ) : null}
 
       {/* Audio mode */}
-      { callType === 'audio' && (
+      {callType === 'audio' && !displayRemote && (
         <View style={styles.audioContainer}>
-          { callData?.callerProfilePicture ?(
-             <View style={styles.avatarLarge}>
-                <Image source={{ uri: myId === callerId ? callData.calleeProfilePicture:callData.callerProfilePicture  }} 
-                />
-                </View>
-          ):(
-             <View style={styles.avatarLarge}>
+          <View style={styles.avatarLarge}>
             <Ionicons name="person" size={80} color="#fff" />
           </View>
-         ) }
-         
-
-          <Text style={styles.audioName}>{myId === callerId ? callData?.calleeName : callData?.callerName}</Text>
+          <Text style={styles.audioName}>{callerName || 'Appel'}</Text>
           <Text style={styles.audioStatus}>Appel en cours...</Text>
         </View>
       )}
 
-      {/* Local video PIP */}
-      {localStream &&  callType === 'video' && (
+      {/* Local video PIP -  displayLocal */}
+      {displayLocal && callType === 'video' && (
         <View style={styles.localVideoContainer}>
-          <RTCView 
-          style={styles.localVideo}
-          streamURL={localStream.toURL()} 
-          objectFit="cover" 
-           />
+          <RTCView
+            style={styles.localVideo}
+            streamURL={displayLocal.toURL()}
+            objectFit="cover"
+          />
         </View>
       )}
 
       {/* Controls */}
       <View style={styles.controls}>
-        <TouchableOpacity style={[styles.ctrlBtn, isMuted && styles.ctrlBtnActive]} onPress={toggleMic}>
-          <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={24} color="#fff" />
-        </TouchableOpacity>
-        {callType === 'video' && (
-          <TouchableOpacity style={[styles.ctrlBtn, !isCameraOn && styles.ctrlBtnActive]} onPress={toggleCamera}>
-            <Ionicons name={isCameraOn ? 'videocam' : 'videocam-off'} size={24} color="#fff" />
+        <View style={styles.controlsRow}>
+          <TouchableOpacity style={[styles.ctrlBtn, isMuted && styles.ctrlBtnActive]} onPress={toggleMic}>
+            <Ionicons name={isMuted ? 'mic-off' : 'mic'} size={24} color="#fff" />
           </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
-          <Ionicons name="call" size={30} color="#fff" />
-        </TouchableOpacity>
+          {callType === 'video' && (
+            <TouchableOpacity style={[styles.ctrlBtn, !isCameraOn && styles.ctrlBtnActive]} onPress={toggleCamera}>
+              <Ionicons name={isCameraOn ? 'videocam' : 'videocam-off'} size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.endBtn} onPress={handleEndCall}>
+            <Ionicons name="call" size={30} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
-}
-  
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
-  // remoteVideoContainer:{
-  //   // To implement the style here
-  // },
   remoteVideo: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   localVideoContainer: {
     position: 'absolute', top: 60, right: 16, width: 130, height: 180,
     borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', zIndex: 10,
   },
-  localVideo: { width: '100%', height: '100%' },
+  localVideo: { flex: 1 },
   controls: { position: 'absolute', bottom: 50, left: 0, right: 0 },
   controlsRow: { flexDirection: 'row', justifyContent: 'center', gap: 25 },
   ctrlBtn: {
