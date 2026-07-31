@@ -128,11 +128,12 @@ const  handleSendHiReply = () => {
       socketRef.current.disconnect();
       socketRef.current = null;
       setSocket(null);
-    }
+    }:
+    
 
     // const socketUrl ='http://192.168.81.123:5000'
 
-const socketUrl =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}/api`
+const socketUrl =`${Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL}`
     // Configuration améliorée 
     const newSocket: Socket = io(socketUrl, {
       transports: ['websocket','polling'],

@@ -3,8 +3,8 @@ export default function RootLayoutBodyNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(asmay)" /> 
          <Stack.Screen name="(yamsa)" />
-       <Stack.Screen name="(asmay)" /> 
     </Stack>
 
   );
