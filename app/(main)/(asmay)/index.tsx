@@ -708,8 +708,8 @@ const RadarScreen: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter()
   const { socket, isConnected, sendSignal } = useSocket();
-const bannerAdRef = useRef<BannerAd>(null);
-  const bannerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+const bannerRef = useRef<BannerAd>(null);
+  const bannerTimeoutRef = useRef<number | 0>(0);
 
   
   const [bannerKey, setBannerKey] = useState(0);
