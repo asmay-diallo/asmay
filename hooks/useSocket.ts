@@ -128,7 +128,7 @@ const  handleSendHiReply = () => {
       socketRef.current.disconnect();
       socketRef.current = null;
       setSocket(null);
-    }:
+    }
     
 
     // const socketUrl ='http://192.168.81.123:5000'

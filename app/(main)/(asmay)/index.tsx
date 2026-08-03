@@ -687,7 +687,6 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useSocket } from "../../../hooks/useSocket";
 import ARRadarView from "../../../components/ARRadarView";
 import LoadingHeart from "../../../components/LoadingHeart"
-// import { toggleFace } from "@/config/faces";
 
 import Constants from 'expo-constants';
 
@@ -709,10 +708,12 @@ const RadarScreen: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter()
   const { socket, isConnected, sendSignal } = useSocket();
-  const bannerRef = useRef<number | 0>(0);
+const bannerAdRef = useRef<BannerAd>(null);
+  const bannerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  
   const [bannerKey, setBannerKey] = useState(0);
   const [bannerLoaded, setBannerLoaded] = useState(false);
-  // const bannerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const dispatch = useDispatch()
   const likesCount = useSelector((state:any)=>state.likes.count)
@@ -771,8 +772,8 @@ const RadarScreen: React.FC = () => {
        //  Gestionnaire de rechargement de bannière
   useEffect(() => {
     return () => {
-      if (bannerRef.current) {
-        clearTimeout(bannerRef.current);
+      if (bannerTimeoutRef.current) {
+        clearTimeout(bannerTimeoutRef.current);
       }
     };
   }, []);
@@ -786,8 +787,8 @@ const RadarScreen: React.FC = () => {
     setBannerLoaded(false);
     
     // Réessayer après 30 secondes
-    if (bannerRef.current) clearTimeout(bannerRef.current);
-    bannerRef.current = setTimeout(() => {
+    if (bannerTimeoutRef.current) clearTimeout(bannerTimeoutRef.current);
+    bannerTimeoutRef.current = setTimeout(() => {
       setBannerKey(prev => prev + 1);
     }, 5000);
   };
